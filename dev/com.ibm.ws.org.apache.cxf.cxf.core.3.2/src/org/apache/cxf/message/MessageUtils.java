@@ -97,7 +97,9 @@ public final class MessageUtils {
      */
     public static boolean isRequestor(Message message) {
         if (message != null) {
+            //Liberty code change start
             Boolean requestor = (Boolean)((MessageImpl) message).getRequestorRole();
+            //Liberty code change end
             return requestor != null && requestor;
         }
         return false;
@@ -110,7 +112,9 @@ public final class MessageUtils {
      * @return true if the current messags is a partial response
      */
     public static boolean isPartialResponse(Message message) {
+        //Liberty code change start
         return message != null && Boolean.TRUE.equals(((MessageImpl) message).getPartialResponse());
+        //Liberty code change end
     }
 
     /**
@@ -121,7 +125,9 @@ public final class MessageUtils {
      * @return true if the current messags is a partial empty response
      */
     public static boolean isEmptyPartialResponse(Message message) {
+        //Liberty code change start
         return message != null && Boolean.TRUE.equals(((MessageImpl) message).getEmptyPartialResponse());
+        //Liberty code change end
     }
 
     /**

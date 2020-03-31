@@ -71,7 +71,6 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
     private static final TraceComponent tc = Tr.register(JAXRSInInterceptor.class);
     private static final Logger LOG = LogUtils.getL7dLogger(JAXRSInInterceptor.class);
     private static final ResourceBundle BUNDLE = BundleUtils.getBundle(JAXRSInInterceptor.class);
-    private static final String RESOURCE_METHOD = "org.apache.cxf.resource.method";
     private static final String RESOURCE_OPERATION_NAME = "org.apache.cxf.resource.operation.name";
     public JAXRSInInterceptor() {
         super(Phase.UNMARSHAL);
@@ -124,16 +123,18 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
             }
         }
         // HTTP method
+        //Liberty code change start
         String httpMethod = ((MessageImpl) message).getHttpRequestMethod();
         if (httpMethod == null) {
             httpMethod = HttpUtils.getProtocolHeader(message, Message.HTTP_REQUEST_METHOD,
                                                         HttpMethod.POST, true);
         }
+        //Liberty code change end
         // Path to match
         String rawPath = HttpUtils.getPathToMatch(message, true);
 
-        //Map<String, List<String>> protocolHeaders = CastUtils.cast((Map<?, ?>)message.get(Message.PROTOCOL_HEADERS));
         @SuppressWarnings("unchecked")
+        //Liberty code change start
         Map<String, List<String>> protocolHeaders = ((MessageImpl) message).getProtocolHeaders();
 
         // Content-Type
@@ -145,6 +146,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
         }
         if (requestContentType == null) {
             requestContentType = (String)((MessageImpl) message).getContentType();
+            //Liberty code change end
 
             if (requestContentType == null) {
                 requestContentType = MediaType.WILDCARD;
@@ -156,6 +158,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
         List<String> acceptHeaderValues = protocolHeaders.get(Message.ACCEPT_CONTENT_TYPE);
         if (acceptHeaderValues != null && !acceptHeaderValues.isEmpty()) {
             acceptTypes = acceptHeaderValues.get(0);
+            //Liberty code change start
             ((MessageImpl) message).setAccept(acceptTypes);
         }
 
@@ -164,6 +167,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
             if (acceptTypes == null) {
                 acceptTypes = "*/*";
                 ((MessageImpl) message).setAccept(acceptTypes);
+                //Liberty code change end
             }
         }
         List<MediaType> acceptContentTypes = null;
@@ -187,7 +191,9 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
 
         boolean shouldFind = true;
 
+        //Liberty code change start
         String ckey = ((MessageImpl) message).getBasePath() + ":" + rawPath + ":" + httpMethod + ":" + requestContentType + ":" + acceptTypes;
+        //Liberty code change end
 
         if (resourceMethodCache != null) {
             ResourceMethodCache rmCache = resourceMethodCache.get(ckey);
@@ -201,6 +207,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
 
                 setExchangeProperties(message, exchange, ori, matchedValues, resources.size());
 
+                //Liberty code change start
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                     Tr.debug(tc, "OperationResourceInfoStack on message: " + ((MessageImpl) message).getOperationResourceInfoStack());
                 }
@@ -211,6 +218,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
                             Tr.debug(tc, "Setting OperationResourceInfoStack on message: " + oriStack);
                         }
                         ((MessageImpl) message).setOperationResourceInfoStack(oriStack);
+                        //Liberty code change end
                     }
                 }
                 shouldFind = false;
@@ -226,11 +234,13 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
             Map<ClassResourceInfo, MultivaluedMap<String, String>> matchedResources = JAXRSUtils.selectResourceClass(resources, rawPath, message);
 
         if (matchedResources == null) {
+            //Liberty code change start
             org.apache.cxf.common.i18n.Message errorMsg =
                 new org.apache.cxf.common.i18n.Message("NO_ROOT_EXC",
                                                    BUNDLE,
                                                    ((MessageImpl) message).getRequestUri(),
                                                    rawPath);
+            //Liberty code change end
             Level logLevel = JAXRSUtils.getExceptionLogLevel(message, NotFoundException.class);
             LOG.log(logLevel == null ? Level.FINE : logLevel, errorMsg.toString());
             Response resp = JAXRSUtils.createResponse(resources, message, errorMsg.toString(),
@@ -243,12 +253,14 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
                       httpMethod, matchedValues, requestContentType, acceptContentTypes, true, true);
             setExchangeProperties(message, exchange, ori, matchedValues, resources.size());
 
-                // The oriStack should now be set.
-                oriStack = (OperationResourceInfoStack) ((MessageImpl) message).getOperationResourceInfoStack();
-                if (resourceMethodCache != null) {
-                    String mediaType = (String) message.getExchange().get(Message.CONTENT_TYPE);
-                    resourceMethodCache.put(ckey, ori, matchedValues, mediaType, oriStack);
-                }
+            // The oriStack should now be set.
+            //Liberty code change start
+            oriStack = (OperationResourceInfoStack) ((MessageImpl) message).getOperationResourceInfoStack();
+            //Liberty code change end
+            if (resourceMethodCache != null) {
+                String mediaType = (String) message.getExchange().get(Message.CONTENT_TYPE);
+                resourceMethodCache.put(ckey, ori, matchedValues, mediaType, oriStack);
+            }
 
         } catch (WebApplicationException ex) {
             if (JAXRSUtils.noResourceMethodForOptions(ex.getResponse(), httpMethod)) {
@@ -304,8 +316,10 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
         final ClassResourceInfo cri = ori.getClassResourceInfo();
         exchange.put(OperationResourceInfo.class, ori);
         exchange.put(JAXRSUtils.ROOT_RESOURCE_CLASS, cri);
+        //Liberty code change start
         ((MessageImpl) message).setResourceMethod(ori.getMethodToInvoke());
         ((MessageImpl) message).setTemplateParameters((Object) values);
+        //Liberty code change end
 
         String plainOperationName = ori.getMethodToInvoke().getName();
         if (numberOfResources > 1) {
@@ -313,6 +327,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
         }
         exchange.put(RESOURCE_OPERATION_NAME, plainOperationName);
 
+        //Liberty code change start
         if (ori.isOneway()) {
             exchange.setOneWay(true);
         } else {
@@ -324,6 +339,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
                 exchange.setOneWay(true);
             }
         }
+        //Liberty code change end
         ResourceProvider rp = cri.getResourceProvider();
         if (rp instanceof SingletonResourceProvider) {
             //cri.isSingleton is not guaranteed to indicate we have a 'pure' singleton

@@ -62,7 +62,9 @@ public class OutgoingChainInterceptor extends AbstractPhaseInterceptor<Message> 
         //also be "echoing" some of the content from the input.   Thus, we need to
         //mark it as requiring the input to be cached.
         if (message.getExchange().get(CACHE_INPUT_PROPERTY) == null) {
+            //Liberty code change start
             ((MessageImpl) message).setCacheInputProperty(Boolean.TRUE);
+            //Liberty code change end
         }
         if (null != binding && null != binding.getOperationInfo() && binding.getOperationInfo().isOneWay()) {
             closeInput(message);
@@ -162,6 +164,7 @@ public class OutgoingChainInterceptor extends AbstractPhaseInterceptor<Message> 
         if (m == null) {
             return;
         }
+        //Liberty code change start
         Collection<InterceptorProvider> providers
             = CastUtils.cast((Collection<?>)((MessageImpl) m).getInterceptorProviders());
         if (providers != null) {
@@ -171,6 +174,7 @@ public class OutgoingChainInterceptor extends AbstractPhaseInterceptor<Message> 
         }
         Collection<Interceptor<? extends Message>> is
             = CastUtils.cast((Collection<?>)((MessageImpl) m).getOutInterceptors());
+        //Liberty code change end
         if (is != null) {
             chain.add(is);
         }

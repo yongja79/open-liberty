@@ -155,12 +155,13 @@ public class URLConnectionHTTPConduit extends HTTPConduit {
         connection.setInstanceFollowRedirects(false);
 
         // If the HTTP_REQUEST_METHOD is not set, the default is "POST".
-        String httpRequestMethod = 
-            (String)((MessageImpl) message).getHttpRequestMethod();
+        //Liberty code change start
+        String httpRequestMethod = (String)((MessageImpl) message).getHttpRequestMethod();
         if (httpRequestMethod == null) {
             httpRequestMethod = "POST";
             ((MessageImpl) message).setHttpRequestMethod("POST");
         }
+        //Liberty code change end
         try {
             connection.setRequestMethod(httpRequestMethod);
         } catch (java.net.ProtocolException ex) {

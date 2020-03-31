@@ -54,15 +54,20 @@ public class UriInfoImpl implements UriInfo {
     private boolean caseInsensitiveQueries;
     private boolean queryValueIsCollection;
 
+    @SuppressWarnings("unchecked")
     public UriInfoImpl(Message m) {
+        //Liberty code change start
         this(m, (MultivaluedMap<String, String>)((MessageImpl) m).getTemplateParameters());
+        //Liberty code change end
     }
 
     public UriInfoImpl(Message m, MultivaluedMap<String, String> templateParams) {
         this.message = m;
         this.templateParams = templateParams;
         if (m != null) {
+            //Liberty code change start
             this.stack = (OperationResourceInfoStack) ((MessageImpl) m).getOperationResourceInfoStack();
+            //Liberty code change end
             this.caseInsensitiveQueries =
                 MessageUtils.getContextualBoolean(m, CASE_INSENSITIVE_QUERIES);
             this.queryValueIsCollection =
@@ -115,15 +120,19 @@ public class UriInfoImpl implements UriInfo {
     public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
         MultivaluedMap<String, String> queries = !caseInsensitiveQueries
             ? new MetadataMap<String, String>() : new MetadataMap<String, String>(false, true);
+        //Liberty code change start
         JAXRSUtils.getStructuredParams(queries, (String)((MessageImpl) message).getQueryString(),
                                       "&", decode, decode, queryValueIsCollection);
+        //Liberty code change end
         return queries;
 
     }
 
     public URI getRequestUri() {
         String path = getAbsolutePathAsString();
+        //Liberty code change start
         String queries = (String)((MessageImpl) message).getQueryString();
+        //Liberty code change end
         if (queries != null) {
             path += "?" + queries;
         }

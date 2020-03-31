@@ -132,14 +132,18 @@ public class ContainerRequestContextImpl extends AbstractRequestContextImpl
         HttpUtils.resetRequestURI(m, requestUri.toString());
         String query = requestUri.getRawQuery();
         if (query != null) {
+            //Liberty code change start
             ((MessageImpl) m).setQueryString(query);
+            //Liberty code change end
         }
     }
 
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) throws IllegalStateException {
         doSetRequestUri(requestUri);
+        //Liberty code change start
         Object servletRequest = ((MessageImpl) m).getHttpRequest();
+        //Liberty code change end
         if (servletRequest != null) {
             ((javax.servlet.http.HttpServletRequest)servletRequest)
                 .setAttribute(ENDPOINT_ADDRESS_PROPERTY, baseUri.toString());

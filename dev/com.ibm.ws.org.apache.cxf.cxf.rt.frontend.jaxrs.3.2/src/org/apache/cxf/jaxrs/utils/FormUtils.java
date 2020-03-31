@@ -161,7 +161,9 @@ public final class FormUtils {
                                              String postBody,
                                              String enc,
                                              boolean decode) {
+        //Liberty code change start
         HttpServletRequest request = (HttpServletRequest)((MessageImpl) m).getHttpRequest();
+        //Liberty code change end
         populateMapFromString(params, m, postBody, enc, decode, request);
         
     }

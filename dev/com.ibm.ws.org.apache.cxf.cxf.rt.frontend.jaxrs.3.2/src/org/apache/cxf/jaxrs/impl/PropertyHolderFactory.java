@@ -33,7 +33,9 @@ public final class PropertyHolderFactory {
     }
 
     public static PropertyHolder getPropertyHolder(Message m) {
+        //Liberty code change start
         return ((MessageImpl) m).containsHttpRequest() ? new ServletRequestPropertyHolder(m) : new MessagePropertyHolder(m);
+        //Liberty code change end
     }
 
     public interface PropertyHolder {

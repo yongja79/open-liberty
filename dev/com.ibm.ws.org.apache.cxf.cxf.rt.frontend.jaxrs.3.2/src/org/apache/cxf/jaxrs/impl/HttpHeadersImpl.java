@@ -85,10 +85,12 @@ public class HttpHeadersImpl implements HttpHeaders {
 
     private Message message;
     private Map<String, List<String>> headers;
+    @SuppressWarnings("unchecked")
     public HttpHeadersImpl(Message message) {
         this.message = message;
-        //this.headers = CastUtils.cast((Map<?, ?>)message.get(Message.PROTOCOL_HEADERS));
+        //Liberty code change start
         this.headers = ((MessageImpl) message).getProtocolHeaders();
+        //Liberty code change end
         if (headers == null) {
             headers = Collections.emptyMap();
         }

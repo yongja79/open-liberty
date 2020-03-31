@@ -123,7 +123,9 @@ public final class ContextUtils {
     * @return true if the current messaging role is that of requestor
     */
     public static boolean isRequestor(Message message) {
+        //Liberty code change start
         Boolean requestor = (Boolean)((MessageImpl) message).getRequestorRole();
+        //Liberty code change end
         return requestor != null && requestor.booleanValue();
     }
 
@@ -505,7 +507,9 @@ public final class ContextUtils {
      * invocation is required.
      */
     public static boolean retrieveAsyncPostResponseDispatch(Message message) {
+        //Liberty code change start
         Boolean ret = (Boolean)((MessageImpl) message).getAsyncPostDispatch();
+        //Liberty code change end
         return ret != null && ret.booleanValue();
     }
 

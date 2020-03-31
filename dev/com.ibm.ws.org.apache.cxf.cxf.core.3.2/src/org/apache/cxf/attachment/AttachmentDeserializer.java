@@ -133,7 +133,9 @@ public class AttachmentDeserializer {
     }
 
     protected void initializeRootMessage() throws IOException {
+        //Liberty code change start
         contentType = (String) ((MessageImpl) message).getContentType();
+        //Liberty code change end
 
         if (contentType == null) {
             throw new IllegalStateException("Content-Type can not be empty!");
@@ -165,7 +167,9 @@ public class AttachmentDeserializer {
             if (!StringUtils.isEmpty(val)) {
                 String cs = HttpHeaderHelper.findCharset(val);
                 if (!StringUtils.isEmpty(cs)) {
+                    //Liberty code change start
                     ((MessageImpl) message).setEncoding(HttpHeaderHelper.mapCharset(cs));
+                    //Liberty code change end
                 }
             }
             val = AttachmentUtil.getHeader(ih, "Content-Transfer-Encoding");

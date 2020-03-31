@@ -53,6 +53,7 @@ public class MessageImpl extends StringMapImpl implements Message {
     private Object[] contents = new Object[20];
     private int index;
 
+    //Liberty code change start
     private Object protoHeaders = NOT_FOUND;
     private Object opStack = NOT_FOUND;
     private Object contentType = NOT_FOUND;
@@ -175,6 +176,7 @@ public class MessageImpl extends StringMapImpl implements Message {
         keys.add(INBOUND_MESSAGE);
         KEYS = Collections.unmodifiableSet(keys);
     }
+    //Liberty code change end
 
     // Liberty change - used to avoid resize
     public MessageImpl(int isize, float factor) {
@@ -202,12 +204,16 @@ public class MessageImpl extends StringMapImpl implements Message {
     @SuppressWarnings("unchecked")
     @Override
     public Collection<Attachment> getAttachments() {
+        //Liberty code change start
         return attachments == NOT_FOUND ? null : (Collection<Attachment>) attachments;
+        //Liberty code change end
     }
 
     @Override
     public void setAttachments(Collection<Attachment> attachments) {
+        //Liberty code change start
         this.attachments = attachments;
+        //Liberty code change end
     }
 
     public String getAttachmentMimeType() {
@@ -217,7 +223,9 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     @Override
     public Destination getDestination() {
+        //Liberty code change start
         return destination == NOT_FOUND ? null : (Destination) destination;
+        //Liberty code change start
     }
 
     @Override
@@ -225,6 +233,426 @@ public class MessageImpl extends StringMapImpl implements Message {
         return exchange;
     }
 
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public InterceptorChain getInterceptorChain() {
+        return this.interceptorChain;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getContent(Class<T> format) {
+        for (int x = 0; x < index; x += 2) {
+            if (contents[x] == format) {
+                return (T) contents[x + 1];
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public <T> void setContent(Class<T> format, Object content) {
+        for (int x = 0; x < index; x += 2) {
+            if (contents[x] == format) {
+                contents[x + 1] = content;
+                return;
+            }
+        }
+        if (index >= contents.length) {
+            //very unlikely to happen.   Haven't seen more than about 6,
+            //but just in case we'll add a few more
+            Object[] tmp = new Object[contents.length + 10];
+            System.arraycopy(contents, 0, tmp, 0, contents.length);
+            contents = tmp;
+        }
+        contents[index] = format;
+        contents[index + 1] = content;
+        index += 2;
+    }
+
+    @Override
+    public <T> void removeContent(Class<T> format) {
+        for (int x = 0; x < index; x += 2) {
+            if (contents[x] == format) {
+                index -= 2;
+                if (x != index) {
+                    contents[x] = contents[index];
+                    contents[x + 1] = contents[index + 1];
+                }
+                contents[index] = null;
+                contents[index + 1] = null;
+                return;
+            }
+        }
+    }
+
+    @Override
+    public Set<Class<?>> getContentFormats() {
+
+        Set<Class<?>> c = new HashSet<>();
+        for (int x = 0; x < index; x += 2) {
+            c.add((Class<?>) contents[x]);
+        }
+        return c;
+    }
+
+    public void setDestination(Destination d) {
+        //Liberty code change start
+    	destination = d;
+        //Liberty code change end
+    }
+
+    @Override
+    public void setExchange(Exchange e) {
+        this.exchange = e;
+    }
+
+    @Override
+    public void setId(String i) {
+        this.id = i;
+    }
+
+    @Override
+    public void setInterceptorChain(InterceptorChain ic) {
+        this.interceptorChain = ic;
+    }
+
+    //Liberty code change start
+    // Since these maps can have null value, use the getOrDefault API
+    // to prevent calling get twice under the covers
+    private static final Object NOT_FOUND = new Object();
+    
+    @Override
+    public Object getContextualProperty(String key) {
+        //Liberty code change start
+        Object o = null;
+        if (KEYS.contains(key)) {
+            if (key == PROTOCOL_HEADERS) {
+                if (protoHeaders != NOT_FOUND) {
+                    return protoHeaders;
+                }
+            } else if (key == CONTENT_TYPE) {
+                if (contentType != NOT_FOUND) {
+                    return contentType;
+                }
+            } else if (key == QUERY_STRING) {
+                if (queryString != NOT_FOUND) {
+                    return queryString;
+                }
+            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
+                if (httpRequest != NOT_FOUND) {
+                    return httpRequest;
+                }
+            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
+                if (httpResponse != NOT_FOUND) {
+                    return httpResponse;
+                }
+            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
+                if (pathToMatchSlash != NOT_FOUND) {
+                    return pathToMatchSlash;
+                }
+            } else if (key == HTTP_REQUEST_METHOD) {
+                if (httpRequestMethod != NOT_FOUND) {
+                    return httpRequestMethod;
+                }
+            } else if (key == INTERCEPTOR_PROVIDERS) {
+                if (interceptorProviders != NOT_FOUND) {
+                    return interceptorProviders;
+                }
+            } else if (key == TEMPLATE_PARAMETERS) {
+                if (templateParameters != NOT_FOUND) {
+                    return templateParameters;
+                }
+            } else if (key == ACCEPT_CONTENT_TYPE) {
+                if (accept != NOT_FOUND) {
+                    return accept;
+                }
+            } else if (key == CONTINUATION_PROVIDER) {
+                if (continuationProvider != NOT_FOUND) {
+                    return continuationProvider;
+                }
+            } else if (key == OP_RES_INFO_STACK) {
+                if (opStack != NOT_FOUND) {
+                    return opStack;
+                }
+            } else if (key == DESTINATION) {
+                if (destination != NOT_FOUND) {
+                    return destination;
+                }
+            } else if (key == WSDL_DESCRIPTION) {
+                if (wsdlDescription != NOT_FOUND) {
+                    return wsdlDescription;
+                }
+            } else if (key == WSDL_INTERFACE) {
+                if (wsdlInterface != NOT_FOUND) {
+                    return wsdlInterface;
+                }
+            } else if (key == WSDL_OPERATION) {
+                if (wsdlOperation != NOT_FOUND) {
+                    return wsdlOperation;
+                }
+            } else if (key == WSDL_PORT) {
+                if (wsdlPort != NOT_FOUND) {
+                    return wsdlPort;
+                }
+            } else if (key == WSDL_SERVICE) {
+                if (wsdlService != NOT_FOUND) {
+                    return wsdlService;
+                }
+            } else if (key == REQUEST_URL) {
+                if (requestUrl != NOT_FOUND) {
+                    return requestUrl;
+                }
+            } else if (key == REQUEST_URI) {
+                if (requestUri != NOT_FOUND) {
+                    return requestUri;
+                }
+            } else if (key == PATH_INFO) {
+                if (pathInfo != NOT_FOUND) {
+                    return pathInfo;
+                }
+            } else if (key == BASE_PATH) {
+                if (basePath != NOT_FOUND) {
+                    return basePath;
+                }
+            } else if (key == FIXED_PARAMETER_ORDER) {
+                if (fixedParamOrder != NOT_FOUND) {
+                    return fixedParamOrder;
+                }
+            } else if (key == IN_INTERCEPTORS) {
+                if (inInterceptors != NOT_FOUND) {
+                    return inInterceptors;
+                }
+            } else if (key == OUT_INTERCEPTORS) {
+                if (outInterceptors != NOT_FOUND) {
+                    return outInterceptors;
+                }
+            } else if (key == RESPONSE_CODE) {
+                if (responseCode != NOT_FOUND) {
+                    return responseCode;
+                }
+            } else if (key == ATTACHMENTS) {
+                if (attachments != NOT_FOUND) {
+                    return attachments;
+                }
+            } else if (key == ENCODING) {
+                if (encoding != NOT_FOUND) {
+                    return encoding;
+                }
+            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
+                if (httpContext != NOT_FOUND) {
+                    return httpContext;
+                }
+            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
+                if (httpConfig != NOT_FOUND) {
+                    return httpConfig;
+                }
+            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
+                if (httpContextMatchStrategy != NOT_FOUND) {
+                    return httpContextMatchStrategy;
+                }
+            } else if (key == HTTP_BASE_PATH) {
+                if (httpBasePath != NOT_FOUND) {
+                    return httpBasePath;
+                }
+            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
+                if (asyncPostDispatch != NOT_FOUND) {
+                    return asyncPostDispatch;
+                }
+            } else if (key == SECURITY_CONTEXT) {
+                if (securityContext != NOT_FOUND) {
+                    return securityContext;
+                }
+            } else if (key == AUTHORIZATION_POLICY) {
+                if (authorizationPolicy != NOT_FOUND) {
+                    return authorizationPolicy;
+                }
+            } else if (key == CERT_CONSTRAINTS) {
+                if (certConstraints != NOT_FOUND) {
+                    return certConstraints;
+                }
+            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
+                if (serviceRedirection != NOT_FOUND) {
+                    return serviceRedirection;
+                }
+            } else if (key == HTTP_SERVLET_RESPONSE) {
+                if (httpServletResponse != NOT_FOUND) {
+                    return httpServletResponse;
+                }
+            } else if (key == RESOURCE_METHOD) {
+                if (resourceMethod != NOT_FOUND) {
+                    return resourceMethod;
+                }
+            } else if (key == ONE_WAY_REQUEST) {
+                if (oneWayRequest != NOT_FOUND) {
+                    return oneWayRequest;
+                }
+            } else if (key == ASYNC_RESPONSE) {
+                if (asyncResponse != NOT_FOUND) {
+                    return asyncResponse;
+                }
+            } else if (key == THREAD_CONTEXT_SWITCHED) {
+                if (threadContextSwitched != NOT_FOUND) {
+                    return threadContextSwitched;
+                }
+            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
+                if (cacheInputProperty != NOT_FOUND) {
+                    return cacheInputProperty;
+                }
+            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
+                if (previousMessage != NOT_FOUND) {
+                    return previousMessage;
+                }
+            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
+                if (responseHeadersCopied != NOT_FOUND) {
+                    return responseHeadersCopied;
+                }
+            } else if (key == SSE_EVENT_SINK) {
+                if (sseEventSink != NOT_FOUND) {
+                    return sseEventSink;
+                }
+            } else if (key == REQUESTOR_ROLE) {
+                if (requestorRole != NOT_FOUND) {
+                    return requestorRole;
+                }
+            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
+                if (partialResponse != NOT_FOUND) {
+                    return partialResponse;
+                }
+            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
+                if (emptyPartialResponse != NOT_FOUND) {
+                    return emptyPartialResponse;
+                }
+            } else if (key == ENDPOINT_ADDRESS) {
+                if (endpointAddress != NOT_FOUND) {
+                    return endpointAddress;
+                }
+            } else if (key == INBOUND_MESSAGE) {
+                if (inboundMessage != NOT_FOUND) {
+                    return inboundMessage;
+                }
+            }
+        }
+        //Liberty code change end
+
+        o = getOrDefault(key, NOT_FOUND);
+        if (o != NOT_FOUND) {
+            return o;
+        }
+        return getFromExchange(key);
+    }
+
+    private Object getFromExchange(String key) {
+        Exchange ex = getExchange();
+        if (ex != null) {
+            Object o = ex.getOrDefault(key, NOT_FOUND);
+            if (o != NOT_FOUND) {
+                return o;
+            }
+            
+            Map<String, Object> p;
+            Endpoint ep = ex.getEndpoint();
+            if (ep != null) {
+                o = ep.getOrDefault(key, NOT_FOUND);
+                if (o != NOT_FOUND) {
+                    return o;
+                }
+
+                EndpointInfo ei = ep.getEndpointInfo();
+                if (ei != null) {
+                    if ((p = ei.getProperties()) != null && (o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
+                        return o;
+                    }
+                    if ((p = ei.getBinding().getProperties()) != null && (o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
+                        return o;
+                    }
+                }
+            }
+            Service sv = ex.getService();
+            if (sv != null && (o = sv.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
+                return o;
+            }
+            Bus b = ex.getBus();
+            if (b != null && (p = b.getProperties()) != null) {
+                if ((o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
+                    return o;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Set<String> getExchangeKeySet() {
+        HashSet<String> keys = new HashSet<>();
+        Exchange ex = getExchange();
+        if (ex != null) {
+            Bus b = ex.getBus();
+            Map<String, Object> p;
+            if (b != null && (p = b.getProperties()) != null) {
+                if (!p.isEmpty()) {
+                    keys.addAll(p.keySet());
+                }
+            }
+            Service sv = ex.getService();
+            if (sv != null && !sv.isEmpty()) {
+                keys.addAll(sv.keySet());
+            }
+            Endpoint ep = ex.getEndpoint();
+            if (ep != null) {
+                EndpointInfo ei = ep.getEndpointInfo();
+                if (ei != null) {
+                    if ((p = ei.getBinding().getProperties()) != null) {
+                        if (!p.isEmpty()) {
+                            keys.addAll(p.keySet());
+                        }
+                    }
+                    if ((p = ei.getProperties()) != null) {
+                        if (!p.isEmpty()) {
+                            keys.addAll(p.keySet());
+                        }
+                    }
+                }
+                
+                if (!ep.isEmpty()) {
+                    keys.addAll(ep.keySet());
+                }
+            }
+            if (!ex.isEmpty()) {
+                keys.addAll(ex.keySet());
+            }
+        }
+        return keys;
+    }
+
+    @Override
+    public Set<String> getContextualPropertyKeys() {
+        Set<String> s = getExchangeKeySet();
+        s.addAll(keySet());
+        return s;
+    }
+    //Liberty code change end
+    
+    public static void copyContent(Message m1, Message m2) {
+        for (Class<?> c : m1.getContentFormats()) {
+            m2.setContent(c, m1.getContent(c));
+        }
+    }
+
+    //Liberty code change start
+    @Override
+    public void resetContextCache() {
+    }
+
+    void setContextualProperty(String key, Object v) {
+        if (!containsKey(key)) {
+            put(key, v);
+        }
+    }
+    
     @SuppressWarnings("rawtypes")
     public Map getProtocolHeaders() {
         return protoHeaders == NOT_FOUND ? null : (Map) protoHeaders;
@@ -237,7 +665,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     @Override
     public Object remove(Object key) {
-        //System.out.println("***JTD: removing " + key);
         if (KEYS.contains(key)) {
             Object ret = null;
             if (key == PROTOCOL_HEADERS) {
@@ -417,8 +844,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
 
     public Object get(String key) {
-        //System.out.println("***JTD: get2 " + key);
-        //Thread.dumpStack();
         if (KEYS.contains(key)) {
             if (key == PROTOCOL_HEADERS) {
                 return getProtocolHeaders();
@@ -539,8 +964,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object put(String key, Object value) {
-        //System.out.println("***JTD: put2 " + key);
-        //Thread.dumpStack();
         if (KEYS.contains(key)) {
             Object ret = null;
             if (key == PROTOCOL_HEADERS) {
@@ -705,7 +1128,6 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     @Override
     public Set<String> keySet() {
-        //System.out.println("***JTD: keySet");
         Set<String> keys = super.keySet();
         if (protoHeaders != NOT_FOUND) {
             keys.add(PROTOCOL_HEADERS);
@@ -866,7 +1288,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     @Override
     public Set<Map.Entry<String,Object>> entrySet() {
-        //System.out.println("***JTD: entrySet");
         Set<Map.Entry<String,Object>> entrySet = super.entrySet();
         HashSet<Map.Entry<String,Object>> myEntrySet = new HashSet<Map.Entry<String,Object>>();
         myEntrySet.addAll(entrySet);
@@ -1080,7 +1501,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     @Override
     public boolean containsKey(Object key) {
-        //System.out.println("***JTD: containsKey " + key);
         if (KEYS.contains(key)) {
             if (key == PROTOCOL_HEADERS) {
                 return protoHeaders != NOT_FOUND;
@@ -1200,7 +1620,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public void putAll(Map<? extends String, ? extends Object> m) {
-        //System.out.println("***JTD: putAll");
         if (m.containsKey(PROTOCOL_HEADERS)) {
             protoHeaders = m.get(PROTOCOL_HEADERS);
         }
@@ -1358,7 +1777,6 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Collection<Object> values() {
-        //System.out.println("***JTD: values");
         Collection<Object> values = super.values();
         if (protoHeaders != NOT_FOUND) {
             values.add(protoHeaders);
@@ -1515,426 +1933,6 @@ public class MessageImpl extends StringMapImpl implements Message {
         }
         return values;
     }
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public InterceptorChain getInterceptorChain() {
-        return this.interceptorChain;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getContent(Class<T> format) {
-        for (int x = 0; x < index; x += 2) {
-            if (contents[x] == format) {
-                return (T) contents[x + 1];
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public <T> void setContent(Class<T> format, Object content) {
-        for (int x = 0; x < index; x += 2) {
-            if (contents[x] == format) {
-                contents[x + 1] = content;
-                return;
-            }
-        }
-        if (index >= contents.length) {
-            //very unlikely to happen.   Haven't seen more than about 6,
-            //but just in case we'll add a few more
-            Object[] tmp = new Object[contents.length + 10];
-            System.arraycopy(contents, 0, tmp, 0, contents.length);
-            contents = tmp;
-        }
-        contents[index] = format;
-        contents[index + 1] = content;
-        index += 2;
-    }
-
-    @Override
-    public <T> void removeContent(Class<T> format) {
-        for (int x = 0; x < index; x += 2) {
-            if (contents[x] == format) {
-                index -= 2;
-                if (x != index) {
-                    contents[x] = contents[index];
-                    contents[x + 1] = contents[index + 1];
-                }
-                contents[index] = null;
-                contents[index + 1] = null;
-                return;
-            }
-        }
-    }
-
-    @Override
-    public Set<Class<?>> getContentFormats() {
-
-        Set<Class<?>> c = new HashSet<>();
-        for (int x = 0; x < index; x += 2) {
-            c.add((Class<?>) contents[x]);
-        }
-        return c;
-    }
-
-    public void setDestination(Destination d) {
-        destination = d;
-    }
-
-    @Override
-    public void setExchange(Exchange e) {
-        this.exchange = e;
-    }
-
-    @Override
-    public void setId(String i) {
-        this.id = i;
-    }
-
-    @Override
-    public void setInterceptorChain(InterceptorChain ic) {
-        this.interceptorChain = ic;
-    }
-
-    //Liberty code change start
-    // Since these maps can have null value, use the getOrDefault API
-    // to prevent calling get twice under the covers
-    private static final Object NOT_FOUND = new Object();
-    
-    @Override
-    public Object getContextualProperty(String key) {
-        //System.out.println("***JTD: getContextualProperty " + key);
-        Object o = null;
-        if (KEYS.contains(key)) {
-            if (key == PROTOCOL_HEADERS) {
-                if (protoHeaders != NOT_FOUND) {
-                    return protoHeaders;
-                }
-            } else if (key == CONTENT_TYPE) {
-                if (contentType != NOT_FOUND) {
-                    return contentType;
-                }
-            } else if (key == QUERY_STRING) {
-                if (queryString != NOT_FOUND) {
-                    return queryString;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                if (httpRequest != NOT_FOUND) {
-                    return httpRequest;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                if (httpResponse != NOT_FOUND) {
-                    return httpResponse;
-                }
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                if (pathToMatchSlash != NOT_FOUND) {
-                    return pathToMatchSlash;
-                }
-            } else if (key == HTTP_REQUEST_METHOD) {
-                if (httpRequestMethod != NOT_FOUND) {
-                    return httpRequestMethod;
-                }
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                if (interceptorProviders != NOT_FOUND) {
-                    return interceptorProviders;
-                }
-            } else if (key == TEMPLATE_PARAMETERS) {
-                if (templateParameters != NOT_FOUND) {
-                    return templateParameters;
-                }
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                if (accept != NOT_FOUND) {
-                    return accept;
-                }
-            } else if (key == CONTINUATION_PROVIDER) {
-                if (continuationProvider != NOT_FOUND) {
-                    return continuationProvider;
-                }
-            } else if (key == OP_RES_INFO_STACK) {
-                if (opStack != NOT_FOUND) {
-                    return opStack;
-                }
-            } else if (key == DESTINATION) {
-                if (destination != NOT_FOUND) {
-                    return destination;
-                }
-            } else if (key == WSDL_DESCRIPTION) {
-                if (wsdlDescription != NOT_FOUND) {
-                    return wsdlDescription;
-                }
-            } else if (key == WSDL_INTERFACE) {
-                if (wsdlInterface != NOT_FOUND) {
-                    return wsdlInterface;
-                }
-            } else if (key == WSDL_OPERATION) {
-                if (wsdlOperation != NOT_FOUND) {
-                    return wsdlOperation;
-                }
-            } else if (key == WSDL_PORT) {
-                if (wsdlPort != NOT_FOUND) {
-                    return wsdlPort;
-                }
-            } else if (key == WSDL_SERVICE) {
-                if (wsdlService != NOT_FOUND) {
-                    return wsdlService;
-                }
-            } else if (key == REQUEST_URL) {
-                if (requestUrl != NOT_FOUND) {
-                    return requestUrl;
-                }
-            } else if (key == REQUEST_URI) {
-                if (requestUri != NOT_FOUND) {
-                    return requestUri;
-                }
-            } else if (key == PATH_INFO) {
-                if (pathInfo != NOT_FOUND) {
-                    return pathInfo;
-                }
-            } else if (key == BASE_PATH) {
-                if (basePath != NOT_FOUND) {
-                    return basePath;
-                }
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                if (fixedParamOrder != NOT_FOUND) {
-                    return fixedParamOrder;
-                }
-            } else if (key == IN_INTERCEPTORS) {
-                if (inInterceptors != NOT_FOUND) {
-                    return inInterceptors;
-                }
-            } else if (key == OUT_INTERCEPTORS) {
-                if (outInterceptors != NOT_FOUND) {
-                    return outInterceptors;
-                }
-            } else if (key == RESPONSE_CODE) {
-                if (responseCode != NOT_FOUND) {
-                    return responseCode;
-                }
-            } else if (key == ATTACHMENTS) {
-                if (attachments != NOT_FOUND) {
-                    return attachments;
-                }
-            } else if (key == ENCODING) {
-                if (encoding != NOT_FOUND) {
-                    return encoding;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                if (httpContext != NOT_FOUND) {
-                    return httpContext;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                if (httpConfig != NOT_FOUND) {
-                    return httpConfig;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                if (httpContextMatchStrategy != NOT_FOUND) {
-                    return httpContextMatchStrategy;
-                }
-            } else if (key == HTTP_BASE_PATH) {
-                if (httpBasePath != NOT_FOUND) {
-                    return httpBasePath;
-                }
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                if (asyncPostDispatch != NOT_FOUND) {
-                    return asyncPostDispatch;
-                }
-            } else if (key == SECURITY_CONTEXT) {
-                if (securityContext != NOT_FOUND) {
-                    return securityContext;
-                }
-            } else if (key == AUTHORIZATION_POLICY) {
-                if (authorizationPolicy != NOT_FOUND) {
-                    return authorizationPolicy;
-                }
-            } else if (key == CERT_CONSTRAINTS) {
-                if (certConstraints != NOT_FOUND) {
-                    return certConstraints;
-                }
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                if (serviceRedirection != NOT_FOUND) {
-                    return serviceRedirection;
-                }
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                if (httpServletResponse != NOT_FOUND) {
-                    return httpServletResponse;
-                }
-            } else if (key == RESOURCE_METHOD) {
-                if (resourceMethod != NOT_FOUND) {
-                    return resourceMethod;
-                }
-            } else if (key == ONE_WAY_REQUEST) {
-                if (oneWayRequest != NOT_FOUND) {
-                    return oneWayRequest;
-                }
-            } else if (key == ASYNC_RESPONSE) {
-                if (asyncResponse != NOT_FOUND) {
-                    return asyncResponse;
-                }
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                if (threadContextSwitched != NOT_FOUND) {
-                    return threadContextSwitched;
-                }
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                if (cacheInputProperty != NOT_FOUND) {
-                    return cacheInputProperty;
-                }
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                if (previousMessage != NOT_FOUND) {
-                    return previousMessage;
-                }
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                if (responseHeadersCopied != NOT_FOUND) {
-                    return responseHeadersCopied;
-                }
-            } else if (key == SSE_EVENT_SINK) {
-                if (sseEventSink != NOT_FOUND) {
-                    return sseEventSink;
-                }
-            } else if (key == REQUESTOR_ROLE) {
-                if (requestorRole != NOT_FOUND) {
-                    return requestorRole;
-                }
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                if (partialResponse != NOT_FOUND) {
-                    return partialResponse;
-                }
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                if (emptyPartialResponse != NOT_FOUND) {
-                    return emptyPartialResponse;
-                }
-            } else if (key == ENDPOINT_ADDRESS) {
-                if (endpointAddress != NOT_FOUND) {
-                    return endpointAddress;
-                }
-            } else if (key == INBOUND_MESSAGE) {
-                if (inboundMessage != NOT_FOUND) {
-                    return inboundMessage;
-                }
-            }
-        }
-
-        o = getOrDefault(key, NOT_FOUND);
-        if (o != NOT_FOUND) {
-            return o;
-        }
-        return getFromExchange(key);
-    }
-
-    private Object getFromExchange(String key) {
-        Exchange ex = getExchange();
-        if (ex != null) {
-            Object o = ex.getOrDefault(key, NOT_FOUND);
-            if (o != NOT_FOUND) {
-                return o;
-            }
-            
-            Map<String, Object> p;
-            Endpoint ep = ex.getEndpoint();
-            if (ep != null) {
-                o = ep.getOrDefault(key, NOT_FOUND);
-                if (o != NOT_FOUND) {
-                    return o;
-                }
-
-                EndpointInfo ei = ep.getEndpointInfo();
-                if (ei != null) {
-                    if ((p = ei.getProperties()) != null && (o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
-                        return o;
-                    }
-                    if ((p = ei.getBinding().getProperties()) != null && (o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
-                        return o;
-                    }
-                }
-            }
-            Service sv = ex.getService();
-            if (sv != null && (o = sv.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
-                return o;
-            }
-            Bus b = ex.getBus();
-            if (b != null && (p = b.getProperties()) != null) {
-                if ((o = p.getOrDefault(key, NOT_FOUND)) != NOT_FOUND) {
-                    return o;
-                }
-            }
-        }
-        return null;
-    }
-
-    private Set<String> getExchangeKeySet() {
-        HashSet<String> keys = new HashSet<>();
-        Exchange ex = getExchange();
-        if (ex != null) {
-            Bus b = ex.getBus();
-            Map<String, Object> p;
-            if (b != null && (p = b.getProperties()) != null) {
-                if (!p.isEmpty()) {
-                    keys.addAll(p.keySet());
-                }
-            }
-            Service sv = ex.getService();
-            if (sv != null && !sv.isEmpty()) {
-                keys.addAll(sv.keySet());
-            }
-            Endpoint ep = ex.getEndpoint();
-            if (ep != null) {
-                EndpointInfo ei = ep.getEndpointInfo();
-                if (ei != null) {
-                    if ((p = ei.getBinding().getProperties()) != null) {
-                        if (!p.isEmpty()) {
-                            keys.addAll(p.keySet());
-                        }
-                    }
-                    if ((p = ei.getProperties()) != null) {
-                        if (!p.isEmpty()) {
-                            keys.addAll(p.keySet());
-                        }
-                    }
-                }
-                
-                if (!ep.isEmpty()) {
-                    keys.addAll(ep.keySet());
-                }
-            }
-            if (!ex.isEmpty()) {
-                keys.addAll(ex.keySet());
-            }
-        }
-        return keys;
-    }
-
-    @Override
-    public Set<String> getContextualPropertyKeys() {
-        //System.out.println("***JTD: getContextualPropertyKeys");
-        Set<String> s = getExchangeKeySet();
-        s.addAll(keySet());
-        return s;
-    }
-    //Liberty code change end
-    
-    public static void copyContent(Message m1, Message m2) {
-        for (Class<?> c : m1.getContentFormats()) {
-            m2.setContent(c, m1.getContent(c));
-        }
-    }
-
-    //Liberty code change start
-    @Override
-    public void resetContextCache() {
-    }
-
-    void setContextualProperty(String key, Object v) {
-        //System.out.println("***JTD: setContextualProperty " + key);
-        //Thread.dumpStack();
-        if (!containsKey(key)) {
-            put(key, v);
-        }
-    }
-    //Liberty code change end
 
     public Object getAuthorizationPolicy() {
         return authorizationPolicy == NOT_FOUND ? null : authorizationPolicy;
@@ -2348,4 +2346,5 @@ public class MessageImpl extends StringMapImpl implements Message {
     public void removeHttpRequest() {
         httpRequest = NOT_FOUND;
     }
+    //Liberty code change end
 }

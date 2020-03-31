@@ -363,17 +363,22 @@ public final class HttpUtils {
     }
 
     public static boolean isHttpRequest(Message message) {
+        //Liberty code change start
         return ((MessageImpl) message).getHttpRequest() != null;
+        //Liberty code change end
     }
 
     public static URI toAbsoluteUri(String relativePath, Message message) {
-        String base = BaseUrlHelper.getBaseURL(
-                                               (HttpServletRequest) ((MessageImpl) message).getHttpRequest());
+        //Liberty code change start
+        String base = BaseUrlHelper.getBaseURL((HttpServletRequest) ((MessageImpl) message).getHttpRequest());
+        //Liberty code change end
         return URI.create(base + relativePath);
     }
 
     public static URI toAbsoluteUri(URI u, Message message) {
+        //Liberty code change start
         HttpServletRequest request = (HttpServletRequest) ((MessageImpl) message).getHttpRequest();
+        //Liberty code change end
         boolean absolute = u.isAbsolute();
         StringBuilder uriBuf = new StringBuilder();
         if (request != null && (!absolute || isLocalHostOrAnyIpAddress(u, uriBuf, message))) {
@@ -421,13 +426,16 @@ public final class HttpUtils {
     }
 
     public static void resetRequestURI(Message message, String requestURI) {
+        //Liberty code change start
         MessageImpl m = (MessageImpl) message;
         m.removePathToMatchSlash();
         m.remove(REQUEST_PATH_TO_MATCH);
-        ((MessageImpl) m).setRequestUri(requestURI);
+        m.setRequestUri(requestURI);
+        //Liberty code change end
     }
 
     public static String getPathToMatch(Message message, boolean addSlash) {
+        //Liberty code change start
         MessageImpl m = (MessageImpl) message;
         String pathToMatch = null;
         if (addSlash) {
@@ -456,6 +464,7 @@ public final class HttpUtils {
         } else {
             m.put(REQUEST_PATH_TO_MATCH, pathToMatch);
         }
+        //Liberty code change end
         return pathToMatch;
     }
 
@@ -466,6 +475,7 @@ public final class HttpUtils {
     public static String getProtocolHeader(Message m, String name, String defaultValue, boolean setOnMessage) {
         String value = (String) m.get(name);
         if (value == null) {
+            //Liberty code change start
             return getFromHeaders(m, name, defaultValue, setOnMessage);
         }
         return value;
@@ -479,6 +489,7 @@ public final class HttpUtils {
         return value == null ? defaultValue : value;
         
     }
+    //Liberty code change end
     
     public static String getBaseAddress(Message m) {
         String endpointAddress = getEndpointAddress(m);
@@ -580,6 +591,7 @@ public final class HttpUtils {
         Destination d = m.getExchange().getDestination();
         if (d != null) {
             if (d instanceof AbstractHTTPDestination) {
+                //Liberty code change start
                 HttpServletRequest request = (HttpServletRequest) ((MessageImpl) m).getHttpRequest();
                 Object property = request != null ? request.getAttribute("org.apache.cxf.transport.endpoint.address") : null;
                 //Liberty code change start
@@ -590,6 +602,7 @@ public final class HttpUtils {
             }
         } else {
             address = (String) ((MessageImpl) m).getEndpointAddress();
+            //Liberty code change end
         }
         if (address.startsWith("http") && address.endsWith("//")) {
             address = address.substring(0, address.length() - 1);
@@ -598,6 +611,7 @@ public final class HttpUtils {
     }
 
     public static void updatePath(Message message, String path) {
+        //Liberty code change start
         MessageImpl m = (MessageImpl) message;
         String baseAddress = getBaseAddress(m);
         boolean pathSlash = path.startsWith("/");
@@ -607,9 +621,10 @@ public final class HttpUtils {
         } else if (!pathSlash && !baseSlash) {
             path = "/" + path;
         }
-        ((MessageImpl) m).setRequestUri(baseAddress + path);
+        m.setRequestUri(baseAddress + path);
         m.remove(REQUEST_PATH_TO_MATCH);
         m.removePathToMatchSlash();
+        //Liberty code change end
     }
 
     public static String getPathToMatch(String path, String address, boolean addSlash) {
@@ -790,20 +805,22 @@ public final class HttpUtils {
         return false;
     }
 
-    public static <T> T createServletResourceValue(Message m, Class<T> clazz) {
-
+    public static <T> T createServletResourceValue(Message message, Class<T> clazz) {
+        //Liberty code change start
+        MessageImpl m = (MessageImpl) message;
         Object value = null;
         if (clazz == HttpServletRequest.class) {
-            HttpServletRequest request = (HttpServletRequest) ((MessageImpl) m).getHttpRequest();
+            HttpServletRequest request = (HttpServletRequest) m.getHttpRequest();
             value = request != null ? new HttpServletRequestFilter(request, m) : null;
         } else if (clazz == HttpServletResponse.class) {
-            HttpServletResponse response = (HttpServletResponse) ((MessageImpl) m).getHttpResponse();
+            HttpServletResponse response = (HttpServletResponse) m.getHttpResponse();
             value = response != null ? new HttpServletResponseFilter(response, m) : null;
         } else if (clazz == ServletContext.class) {
-            value = m.get(AbstractHTTPDestination.HTTP_CONTEXT);
+            value = m.getHttpContext();
         } else if (clazz == ServletConfig.class) {
-            value = m.get(AbstractHTTPDestination.HTTP_CONFIG);
+            value = m.getHttpConfig();
         }
+        //Liberty code change end
 
         return clazz.cast(value);
     }

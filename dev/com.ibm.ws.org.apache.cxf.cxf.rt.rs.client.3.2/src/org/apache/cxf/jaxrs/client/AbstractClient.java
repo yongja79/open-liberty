@@ -938,6 +938,7 @@ public abstract class AbstractClient implements Client {
         } catch (Fault ex) {
             LOG.warning("Failure to prepare a message from conduit selector");
         }
+        //Liberty code change start
         MessageImpl message = (MessageImpl) m;
         message.getExchange().put(ConduitSelector.class, cfg.getConduitSelector());
         message.getExchange().put(Service.class, cfg.getConduitSelector().getEndpoint().getService());
@@ -952,6 +953,7 @@ public abstract class AbstractClient implements Client {
             message.setRequestUri(uri);
         }
         message.setBasePath(getBaseURI().toString());
+        //Liberty code change end
     }
 
     protected static PhaseInterceptorChain setupOutInterceptorChain(ClientConfiguration cfg) {
@@ -1004,6 +1006,7 @@ public abstract class AbstractClient implements Client {
                                     Map<String, Object> invocationContext,
                                     boolean proxy) {
         checkClosed();
+        //Liberty code change start
         MessageImpl m = (MessageImpl) cfg.getConduitSelector().getEndpoint().getBinding().createMessage();
         m.setRequestorRole(Boolean.TRUE);
         m.setInboundMessage(Boolean.FALSE);
@@ -1036,6 +1039,7 @@ public abstract class AbstractClient implements Client {
         PhaseInterceptorChain chain = setupOutInterceptorChain(cfg);
         chain.setFaultObserver(setupInFaultObserver(cfg));
         m.setInterceptorChain(chain);
+        //Liberty code change end
 
         exchange = createExchange(m, exchange);
         exchange.put(Message.REST_MESSAGE, Boolean.TRUE);
@@ -1052,7 +1056,9 @@ public abstract class AbstractClient implements Client {
     }
 
     private void setRequestMethod(Message m, String httpMethod) {
+        //Liberty code change start
         ((MessageImpl) m).setHttpRequestMethod(httpMethod);
+        //Liberty code change end
         if (!KNOWN_METHODS.contains(httpMethod)) {
             if (!m.containsKey("use.async.http.conduit")) {
                 // if the async conduit is loaded then let it handle this method without users
@@ -1148,9 +1154,11 @@ public abstract class AbstractClient implements Client {
             reqContext = new HashMap<>(cfg.getRequestContext());
             context.put(REQUEST_CONTEXT, reqContext);
         }
+        //Liberty code change start
         reqContext.put(Message.PROTOCOL_HEADERS, message.getProtocolHeaders());
         reqContext.put(Message.REQUEST_URI, message.getRequestUri());
         reqContext.put(Message.ENDPOINT_ADDRESS, message.getEndpointAddress());
+        //Liberty code change end
         reqContext.put(PROXY_PROPERTY, proxy);
 
         if (resContext == null) {

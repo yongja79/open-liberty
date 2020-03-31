@@ -289,7 +289,9 @@ public class PhaseInterceptorChain implements InterceptorChain {
      * @throws Exception
      */
     @SuppressWarnings("unchecked")
+    //Liberty code change start
     @FFDCIgnore({SuspendedInvocationException.class,RuntimeException.class})
+    //Liberty code change end
     public synchronized boolean doIntercept(Message message) {
         updateIterator();
 
@@ -297,10 +299,12 @@ public class PhaseInterceptorChain implements InterceptorChain {
         try {
             CURRENT_MESSAGE.set(message);
             if (oldMessage != null
+                //Liberty code change start
                 && !((MessageImpl) message).containsPreviousMessage()
                 && message != oldMessage
                 && message.getExchange() != oldMessage.getExchange()) {
                 ((MessageImpl) message).setPreviousMessage(new WeakReference<Message>(oldMessage));
+                //Liberty code change end
             }
             while (state == State.EXECUTING && iterator.hasNext()) {
                 try {
@@ -493,7 +497,9 @@ public class PhaseInterceptorChain implements InterceptorChain {
     }
 
     @SuppressWarnings("unchecked")
+    //Liberty code change start
     @FFDCIgnore({RuntimeException.class})
+    //Liberty code change end
     public void unwind(Message message) {
         while (iterator.hasPrevious()) {
             Interceptor<Message> currentInterceptor = (Interceptor<Message>)iterator.previous();

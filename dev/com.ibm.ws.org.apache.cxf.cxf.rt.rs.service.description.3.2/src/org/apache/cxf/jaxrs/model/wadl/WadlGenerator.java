@@ -219,7 +219,9 @@ public class WadlGenerator implements ContainerRequestFilter {
     }
 
     protected void doFilter(ContainerRequestContext context, Message m) {
+        //Liberty code change start
         if (!"GET".equals(((MessageImpl) m).getHttpRequestMethod())) {
+            //Liberty code change end
             return;
         }
 

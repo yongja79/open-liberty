@@ -33,7 +33,9 @@ public class ServletRequestPropertyHolder implements PropertyHolder {
     private static final String ENDPOINT_ADDRESS_PROPERTY = "org.apache.cxf.transport.endpoint.address";
     private HttpServletRequest request;
     public ServletRequestPropertyHolder(Message m) {
+        //Liberty code change start
         request = (HttpServletRequest)((MessageImpl) m).getHttpRequest();
+        //Liberty code change end
     }
 
     @Override

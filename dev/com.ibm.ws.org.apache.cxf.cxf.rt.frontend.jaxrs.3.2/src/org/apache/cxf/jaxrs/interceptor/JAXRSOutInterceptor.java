@@ -38,7 +38,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.sse.SseEventSink;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.stream.events.XMLEvent;
 
@@ -85,7 +84,9 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
         try {
             processResponse(providerFactory, message);
         } finally {
+            //Liberty code change start
             if (((MessageImpl) message).getSseEventSink() == null) {
+                //Liberty code change end
                 ServerProviderFactory.releaseRequestState(providerFactory, message);
             }
         }
@@ -110,7 +111,9 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
             response = (Response)responseObj;
             if (response.getStatus() == 500
                 && message.getExchange().get(JAXRSUtils.EXCEPTION_FROM_MAPPER) != null) {
+                //Liberty code change start
                 ((MessageImpl) message).setResponseCode(500);
+                //Liberty code change end
                 return;
             }
         } else {
@@ -189,7 +192,9 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
                 responseHeaders.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
                 if (MessageUtils.getContextualBoolean(message, "remove.content.type.for.empty.response", false)) {
                     responseHeaders.remove(HttpHeaders.CONTENT_TYPE);
+                    //Liberty code change start
                     ((MessageImpl) message).removeContentType();
+                    //Liberty code change end
                 }
             }
             HttpUtils.convertHeaderValuesToString(responseHeaders, true);
@@ -241,7 +246,9 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
             Tr.debug(tc, "Response content type is: " + finalResponseContentType);
         }
         responseHeaders.putSingle(HttpHeaders.CONTENT_TYPE, finalResponseContentType);
+        //Liberty code change start
         ((MessageImpl) message).setContentType(finalResponseContentType);
+        //Liberty code change end
 
         boolean enabled = checkBufferingMode(message, writers, firstTry);
         try {
@@ -283,14 +290,16 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
                                                                   boolean firstTry) {
         MultivaluedMap<String, Object> responseHeaders = response.getMetadata();
         @SuppressWarnings("unchecked")
-        //Map<String, List<Object>> userHeaders = (Map<String, List<Object>>)message.get(Message.PROTOCOL_HEADERS);
+        //Liberty code change start
         Map<String, List<Object>> userHeaders = ((MessageImpl) message).getProtocolHeaders();
+        //Liberty code change end
         if (firstTry && userHeaders != null) {
             responseHeaders.putAll(userHeaders);
         }
         if (entity != null) {
             Object customContentType = responseHeaders.getFirst(HttpHeaders.CONTENT_TYPE);
             if (customContentType == null) {
+                //Liberty code change start
                 String initialResponseContentType = (String)((MessageImpl) message).getContentType();
                 if (initialResponseContentType != null) {
                     responseHeaders.putSingle(HttpHeaders.CONTENT_TYPE, initialResponseContentType);
@@ -299,8 +308,8 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
                 ((MessageImpl) message).setContentType(customContentType.toString());
             }
         }
-        //message.put(Message.PROTOCOL_HEADERS, responseHeaders);
         ((MessageImpl) message).setProtocolHeaders(responseHeaders);
+        //Liberty code change end
         setResponseDate(responseHeaders, firstTry);
         return responseHeaders;
     }
@@ -408,8 +417,10 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
 
     private void writeResponseErrorMessage(Message message, OutputStream out,
                                            String name, Class<?> cls, MediaType ct) {
+        //Liberty code change start
         ((MessageImpl) message).setContentType("text/plain");
         ((MessageImpl) message).setResponseCode(500);
+        //Liberty code change end
         try {
             String errorMessage = JAXRSUtils.logMessageHandlerProblem(name, cls, ct);
             if (out != null) {
@@ -476,11 +487,13 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
     }
 
     private void setResponseStatus(Message message, int status) {
+        //Liberty code change start
         ((MessageImpl) message).setResponseCode(status);
         boolean responseHeadersCopied = isResponseHeadersCopied(message);
         if (responseHeadersCopied) {
             HttpServletResponse response =
                 (HttpServletResponse)((MessageImpl) message).getHttpResponse();
+            //Liberty code change end
             response.setStatus(status);
         }
     }
@@ -494,7 +507,9 @@ public class JAXRSOutInterceptor extends AbstractOutDatabindingInterceptor {
     // method is modifiable. Thus we do need to know if the initial copy has already
     // occurred: for now we will just use to ensure the correct status is set
     private boolean isResponseHeadersCopied(Message message) {
+        //Liberty code change start
         return PropertyUtils.isTrue(((MessageImpl) message).getResponseHeadersCopied());
+        //Liberty code change end
     }
 
     @Override

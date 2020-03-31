@@ -42,6 +42,7 @@ public class JAXRSBinding extends AbstractBasicInterceptorProvider implements Bi
     }
 
     public org.apache.cxf.message.Message createMessage(org.apache.cxf.message.Message m) {
+        //Liberty code change start
         if (!((MessageImpl) m).containsContentType()) {
 
             String ct = null;
@@ -53,6 +54,7 @@ public class JAXRSBinding extends AbstractBasicInterceptorProvider implements Bi
                 ct = (String)exchange.get(org.apache.cxf.message.Message.CONTENT_TYPE);
             }
             ((MessageImpl) m).setContentType(ct);
+            //Liberty code change end
         }
         return m;
     }

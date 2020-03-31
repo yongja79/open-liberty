@@ -915,7 +915,10 @@ public final class ResourceUtils {
         if (m == null) {
             m = new MessageImpl();
         }
+        @SuppressWarnings("unchecked")
+        //Liberty code change start
         MultivaluedMap<String, String> templateValues = (MultivaluedMap<String, String>)((MessageImpl) m).getTemplateParameters();
+        //Liberty code change end
         Object[] values = new Object[params.length];
         for (int i = 0; i < params.length; i++) {
             if (AnnotationUtils.getAnnotation(anns[i], Context.class) != null) {

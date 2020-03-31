@@ -267,7 +267,9 @@ public abstract class AbstractHTTPDestination
 
         copyKnownRequestAttributes(req, inMessage);
 
+        //Liberty code change start
         ((MessageImpl) inMessage).setHttpServletResponse(resp); // Liberty change - reqd for SSE see LibertySseEventSinkImpl
+        //Liberty code change end
 
         try {
             incomingObserver.onMessage(inMessage);
@@ -298,14 +300,18 @@ public abstract class AbstractHTTPDestination
                                   final HttpServletRequest req,
                                   final HttpServletResponse resp,
                                   Message m) throws IOException {
+        //Liberty code change start
         ContinuationProvider p = (ContinuationProvider) ((MessageImpl) m).getContinuationProvider();
+        //Liberty code change end
         if (p != null) {
             p.complete();
         }
     }
 
     private void copyKnownRequestAttributes(HttpServletRequest request, Message message) {
+        //Liberty code change start
         ((MessageImpl) message).setServiceRedirection(request.getAttribute(SERVICE_REDIRECTION));
+        //Liberty code change end
     }
 
     protected void setupMessage(final Message message,
@@ -339,6 +345,7 @@ public abstract class AbstractHTTPDestination
             }
         };
 
+        //Liberty code change start
         inMessage.setContent(DelegatingInputStream.class, in);
         inMessage.setContent(InputStream.class, in);
         inMessage.setHttpRequest(req);
@@ -352,6 +359,7 @@ public abstract class AbstractHTTPDestination
         inMessage.setRequestUri(requestURI);
         String requestURL = req.getRequestURL().toString();
         inMessage.setRequestUrl(requestURL);
+        //Liberty code change end
         String contextPath = req.getContextPath();
         if (contextPath == null) {
             contextPath = "";
@@ -363,9 +371,11 @@ public abstract class AbstractHTTPDestination
         String contextServletPath = contextPath + servletPath;
         String pathInfo = req.getPathInfo();
         if (pathInfo != null) {
+            //Liberty code change start
             inMessage.setPathInfo(contextServletPath + pathInfo);
         } else {
             inMessage.setPathInfo(requestURI);
+            //Liberty code change end
         }
         if (!StringUtils.isEmpty(requestURI)) {
             int index = requestURL.indexOf(requestURI);
@@ -376,6 +386,7 @@ public abstract class AbstractHTTPDestination
                 // http://localhost:8080/app will make it easy to refer to non CXF resources
                 String schemaInfo = requestURL.substring(0, index);
                 String basePathWithContextOnly = schemaInfo + contextPath;
+                //Liberty code change start
                 inMessage.setHttpBasePath(basePathWithContextOnly);
             }
         } else if (!StringUtils.isEmpty(servletPath) && requestURL.endsWith(servletPath)) {
@@ -397,6 +408,7 @@ public abstract class AbstractHTTPDestination
         }
         inMessage.setFixedParamOrder(isFixedParameterOrder());
         inMessage.setAsyncPostDispatch(Boolean.TRUE);
+        //Liberty code change end
 
         SecurityContext httpSecurityContext = new SecurityContext() {
             @Override
@@ -410,6 +422,7 @@ public abstract class AbstractHTTPDestination
             }
         };
 
+        //Liberty code change start
         inMessage.setSecurityContext(httpSecurityContext);
 
         Headers headers = new Headers(inMessage);
@@ -423,6 +436,7 @@ public abstract class AbstractHTTPDestination
 
         inMessage.setCertConstraints(certConstraints);
         inMessage.setInInterceptors(Arrays.asList(new Interceptor[] {CertConstraintsInterceptor.INSTANCE}));
+        //Liberty code change end
 
     }
 
@@ -469,7 +483,9 @@ public abstract class AbstractHTTPDestination
                 Tr.warning(tc, m);
                 throw new IOException(m);
             }
+            //Liberty code change start
             ((MessageImpl) inMessage).setEncoding(normalizedEncoding);
+            //Liberty code change end
         }
         return contentType;
     }
@@ -493,11 +509,13 @@ public abstract class AbstractHTTPDestination
                                      final HttpServletResponse resp) {
         try {
             if (/* Liberty change - removing refs to isServlet3 */req.isAsyncSupported()) {
+                //Liberty code change start
                 ((MessageImpl) inMessage).setContinuationProvider(new Servlet3ContinuationProvider(req, resp, inMessage));
             } else if (cproviderFactory != null) {
                 ContinuationProvider p = cproviderFactory.createContinuationProvider(inMessage, req, resp);
                 if (p != null) {
                     ((MessageImpl) inMessage).setContinuationProvider(p);
+                    //Liberty code change end
                 }
             }
         } catch (Throwable ex) {
@@ -546,7 +564,9 @@ public abstract class AbstractHTTPDestination
      */
     @Override
     protected Conduit getInbuiltBackChannel(Message inMessage) {
+        //Liberty code change start
         HttpServletResponse response = (HttpServletResponse) ((MessageImpl) inMessage).getHttpResponse();
+        //Liberty code change end
         return new BackChannelConduit(response);
     }
 
@@ -595,10 +615,12 @@ public abstract class AbstractHTTPDestination
         if (inMessage == null) {
             return;
         }
+        //Liberty code change start
         Object o = ((MessageImpl) inMessage).getCacheInputProperty();
         DelegatingInputStream in = inMessage.getContent(DelegatingInputStream.class);
         if (PropertyUtils.isTrue(o)) {
             Collection<Attachment> atts = (Collection<Attachment>) inMessage.getAttachments();
+            //Liberty code change end
             if (atts != null) {
                 for (Attachment a : atts) {
                     if (a.getDataHandler().getDataSource() instanceof AttachmentDataSource) {
@@ -667,6 +689,7 @@ public abstract class AbstractHTTPDestination
         }
         //Liberty code change end
 
+        //Liberty code change start
         ((MessageImpl) outMessage).setResponseHeadersCopied("true");
 
         if (hasNoResponseContent(outMessage)) {
@@ -682,6 +705,7 @@ public abstract class AbstractHTTPDestination
         if (oneWay) {
             ((MessageImpl) outMessage).removeHttpResponse();
         }
+        //Liberty code change end
         return responseStream;
     }
 
@@ -695,6 +719,7 @@ public abstract class AbstractHTTPDestination
     }
 
     private int getReponseCodeFromMessage(Message message) {
+        //Liberty code change start
         Integer i = (Integer) ((MessageImpl) message).getResponseCode();
         if (i != null) {
             return i.intValue();
@@ -702,6 +727,7 @@ public abstract class AbstractHTTPDestination
         int code = hasNoResponseContent(message) ? HttpURLConnection.HTTP_ACCEPTED : HttpURLConnection.HTTP_OK;
         // put the code in the message so that others can get it
         ((MessageImpl) message).setResponseCode(code);
+        //Liberty code change end
         return code;
     }
 
@@ -728,7 +754,9 @@ public abstract class AbstractHTTPDestination
     }
 
     private HttpServletResponse getHttpResponseFromMessage(Message message) throws IOException {
+        //Liberty code change start
         Object responseObj = ((MessageImpl) message).getHttpResponse();
+        //Liberty code change end
         if (responseObj instanceof HttpServletResponse) {
             return (HttpServletResponse) responseObj;
         } else if (null != responseObj) {
@@ -769,7 +797,9 @@ public abstract class AbstractHTTPDestination
          */
         @Override
         public void prepare(Message message) throws IOException {
+            //Liberty code change start
             ((MessageImpl) message).setHttpResponse(response);
+            //Liberty code change end
             OutputStream os = message.getContent(OutputStream.class);
             if (os == null) {
                 message.setContent(OutputStream.class,

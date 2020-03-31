@@ -514,12 +514,14 @@ public abstract class HTTPConduit
         setupConnection(message, currentAddress, csPolicy);
 
         // If the HTTP_REQUEST_METHOD is not set, the default is "POST".
+        //Liberty code change start
         String httpRequestMethod =
             (String)((MessageImpl) message).getHttpRequestMethod();
         if (httpRequestMethod == null) {
             httpRequestMethod = "POST";
             ((MessageImpl) message).setHttpRequestMethod("POST");
         }
+        //Liberty code change end
 
         boolean isChunking = false;
         int chunkThreshold = 0;
@@ -713,6 +715,7 @@ public abstract class HTTPConduit
      * @throws URISyntaxException
      */
     private Address setupAddress(Message m) throws URISyntaxException {
+        //Liberty code change start
         MessageImpl message = (MessageImpl) m;
         String result = (String)message.getEndpointAddress();
         String pathInfo = (String)message.getPathInfo();
@@ -730,6 +733,7 @@ public abstract class HTTPConduit
                 message.setEndpointAddress(result);
             }
         }
+        //Liberty code change end
 
         // REVISIT: is this really correct?
         if (null != pathInfo && !result.endsWith(pathInfo)) {
@@ -1078,6 +1082,7 @@ public abstract class HTTPConduit
         @Override
         @FFDCIgnore(IOException.class)
         public void onMessage(Message message) {
+            //Liberty code change start
             MessageImpl inMessage = (MessageImpl) message;
             // disposable exchange, swapped with real Exchange on correlation
             inMessage.setExchange(new ExchangeImpl());
@@ -1092,6 +1097,7 @@ public abstract class HTTPConduit
             inMessage.removeHttpRequest();
             inMessage.removeHttpResponse();
             inMessage.remove(Message.ASYNC_POST_RESPONSE_DISPATCH);
+            //Liberty code change end
 
             //cache this inputstream since it's defer to use in case of async
             try {
@@ -1364,7 +1370,9 @@ public abstract class HTTPConduit
             }
         }
         protected String getMethod() {
+            //Liberty code change start
             return (String)((MessageImpl) outMessage).getHttpRequestMethod();
+            //Liberty code change end
         }
 
 
@@ -1686,7 +1694,9 @@ public abstract class HTTPConduit
             Message inMessage = new MessageImpl();
             inMessage.setExchange(exchange);
             updateResponseHeaders(inMessage);
+            //Liberty code change start
             ((MessageImpl) inMessage).setResponseCode(responseCode);
+            //Liberty code change end
             if (MessageUtils.getContextualBoolean(outMessage, SET_HTTP_RESPONSE_MESSAGE, false)) {
                 inMessage.put(HTTP_RESPONSE_MESSAGE, getResponseMessage());
             }
@@ -1735,7 +1745,9 @@ public abstract class HTTPConduit
                 LOG.log(Level.WARNING, m);
                 throw new IOException(m);
             }
+            //Liberty code change start
             ((MessageImpl) inMessage).setEncoding(normalizedEncoding);
+            //Liberty code change end
             if (in == null) {
                 in = getInputStream();
             }

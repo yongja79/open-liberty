@@ -179,7 +179,9 @@ public abstract class AbstractParamInjectionBinding<A extends Annotation> extend
         Message message = paramInjectionMetadata.getInMessage();
         OperationResourceInfo ori = paramInjectionMetadata.getOperationResourceInfo();
         BeanResourceInfo cri = ori.getClassResourceInfo();
+        //Liberty code change start
         MultivaluedMap<String, String> values = (MultivaluedMap<String, String>) ((MessageImpl) message).getTemplateParameters();
+        //Liberty code change end
         if (p.getType() == ParameterType.BEAN && cri instanceof ClassResourceInfo) {
             injectedObject = JAXRSUtils.createBeanParamValue(message, classType, ori);
         } else {

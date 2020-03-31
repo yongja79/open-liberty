@@ -301,8 +301,9 @@ public class MessageContextImpl implements MessageContext {
             throw ExceptionUtils.toInternalServerErrorException(ex, null);
         }
 
-
+        //Liberty code change start
         Collection<org.apache.cxf.message.Attachment> childAttachments = (Collection<org.apache.cxf.message.Attachment>)inMessage.getAttachments();
+        //Liberty code change end
         if (childAttachments == null) {
             childAttachments = Collections.emptyList();
         }

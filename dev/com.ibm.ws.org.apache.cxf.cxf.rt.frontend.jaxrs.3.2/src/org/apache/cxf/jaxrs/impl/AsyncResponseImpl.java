@@ -65,6 +65,7 @@ public class AsyncResponseImpl implements AsyncResponse, ContinuationCallback {
     private Throwable unmappedThrowable;
     //Liberty code change start
     //defect 168372
+    @SuppressWarnings("rawtypes")
     protected ScheduledFuture timeoutFuture; // this is to get around TCK tests that call setTimeout in a separate thread which is illegal.
     protected ScheduledExecutorService asyncScheduler;
     //Liberty code change end
@@ -346,8 +347,10 @@ public class AsyncResponseImpl implements AsyncResponse, ContinuationCallback {
     }
 
     private void initContinuation() {
+        //Liberty code change start
         ContinuationProvider provider =
             (ContinuationProvider)((MessageImpl) inMessage).getContinuationProvider();
+        //Liberty code change end
         if (provider == null) {
             throw new IllegalArgumentException("Continuation not supported. Please ensure that all servlets and servlet filters support async operations");
         }

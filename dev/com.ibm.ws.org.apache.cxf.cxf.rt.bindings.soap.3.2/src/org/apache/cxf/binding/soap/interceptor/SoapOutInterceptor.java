@@ -281,7 +281,9 @@ public class SoapOutInterceptor extends AbstractSoapInterceptor {
             throw new Fault(new org.apache.cxf.common.i18n.Message("NO_DATAWRITER", BUNDLE, service
                 .getName()));
         }
+        //Liberty code change start
         dataWriter.setAttachments((Collection<Attachment>)message.getAttachments());
+        //Liberty code change end
         setDataWriterValidation(service, message, dataWriter);
         return dataWriter;
     }

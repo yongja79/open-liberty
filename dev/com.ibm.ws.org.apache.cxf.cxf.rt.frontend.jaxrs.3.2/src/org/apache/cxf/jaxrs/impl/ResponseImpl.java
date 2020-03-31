@@ -378,7 +378,9 @@ public final class ResponseImpl extends Response {
     // Liberty Change
     private Link makeAbsoluteLink(Link link) {
         if (!link.getUri().isAbsolute()) {
+            //Liberty code change start
             URI requestURI = URI.create((String)((MessageImpl) outMessage).getRequestUri());
+            //Liberty code change end
             link = Link.fromLink(link).baseUri(requestURI).build();
         }
         return link;

@@ -258,7 +258,9 @@ public class ReadHeadersInterceptor extends AbstractSoapInterceptor {
                             } else {
                                 dataBinding = p.getDataBinding();
                                 DataReader<Node> dataReader = dataBinding.createReader(Node.class);
+                                //Liberty code change start
                                 dataReader.setAttachments((Collection<Attachment>)message.getAttachments());
+                                //Liberty code change end
                                 dataReader.setProperty(DataReader.ENDPOINT, message.getExchange().getEndpoint());
                                 dataReader.setProperty(Message.class.getName(), message);
                                 obj = dataReader.read(hel);

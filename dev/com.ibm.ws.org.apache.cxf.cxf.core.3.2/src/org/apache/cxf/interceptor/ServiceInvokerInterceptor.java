@@ -166,6 +166,7 @@ public class ServiceInvokerInterceptor extends AbstractPhaseInterceptor<Message>
     }
 
     private void copyJaxwsProperties(Message im, Message om) {
+        //Liberty code change start
         MessageImpl inMsg = (MessageImpl) im;
         MessageImpl outMsg = (MessageImpl) om;
         outMsg.setWsdlOperation(inMsg.getWsdlOperation());
@@ -173,5 +174,6 @@ public class ServiceInvokerInterceptor extends AbstractPhaseInterceptor<Message>
         outMsg.setWsdlInterface(inMsg.getWsdlInterface());
         outMsg.setWsdlPort(inMsg.getWsdlPort());
         outMsg.setWsdlDescription(inMsg.getWsdlDescription());
+        //Liberty code change end
     }
 }
