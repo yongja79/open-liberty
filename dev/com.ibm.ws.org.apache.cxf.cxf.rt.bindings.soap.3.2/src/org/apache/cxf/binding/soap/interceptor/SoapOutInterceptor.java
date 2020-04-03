@@ -22,7 +22,6 @@ package org.apache.cxf.binding.soap.interceptor;
 
 import java.io.EOFException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -51,7 +50,6 @@ import org.apache.cxf.headers.HeaderProcessor;
 import org.apache.cxf.helpers.ServiceUtils;
 import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.io.WriteOnCloseOutputStream;
-import org.apache.cxf.message.Attachment;
 import org.apache.cxf.message.Exchange;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.message.MessageContentsList;
@@ -281,9 +279,7 @@ public class SoapOutInterceptor extends AbstractSoapInterceptor {
             throw new Fault(new org.apache.cxf.common.i18n.Message("NO_DATAWRITER", BUNDLE, service
                 .getName()));
         }
-        //Liberty code change start
-        dataWriter.setAttachments((Collection<Attachment>)message.getAttachments());
-        //Liberty code change end
+        dataWriter.setAttachments(message.getAttachments());
         setDataWriterValidation(service, message, dataWriter);
         return dataWriter;
     }

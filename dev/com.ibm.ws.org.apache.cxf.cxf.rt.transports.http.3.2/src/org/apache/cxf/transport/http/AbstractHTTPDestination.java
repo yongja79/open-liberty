@@ -617,10 +617,10 @@ public abstract class AbstractHTTPDestination
         }
         //Liberty code change start
         Object o = ((MessageImpl) inMessage).getCacheInputProperty();
+        //Liberty code change end
         DelegatingInputStream in = inMessage.getContent(DelegatingInputStream.class);
         if (PropertyUtils.isTrue(o)) {
-            Collection<Attachment> atts = (Collection<Attachment>) inMessage.getAttachments();
-            //Liberty code change end
+            Collection<Attachment> atts = inMessage.getAttachments();
             if (atts != null) {
                 for (Attachment a : atts) {
                     if (a.getDataHandler().getDataSource() instanceof AttachmentDataSource) {

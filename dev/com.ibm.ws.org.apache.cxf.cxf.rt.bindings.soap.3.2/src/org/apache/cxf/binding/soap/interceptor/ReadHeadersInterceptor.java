@@ -21,7 +21,6 @@ package org.apache.cxf.binding.soap.interceptor;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +60,6 @@ import org.apache.cxf.helpers.DOMUtils;
 import org.apache.cxf.helpers.ServiceUtils;
 import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.message.MessageUtils;
-import org.apache.cxf.message.Attachment;
 import org.apache.cxf.phase.Phase;
 import org.apache.cxf.staxutils.PartialXMLStreamReader;
 import org.apache.cxf.staxutils.StaxUtils;
@@ -258,9 +256,7 @@ public class ReadHeadersInterceptor extends AbstractSoapInterceptor {
                             } else {
                                 dataBinding = p.getDataBinding();
                                 DataReader<Node> dataReader = dataBinding.createReader(Node.class);
-                                //Liberty code change start
-                                dataReader.setAttachments((Collection<Attachment>)message.getAttachments());
-                                //Liberty code change end
+                                dataReader.setAttachments(message.getAttachments());
                                 dataReader.setProperty(DataReader.ENDPOINT, message.getExchange().getEndpoint());
                                 dataReader.setProperty(Message.class.getName(), message);
                                 obj = dataReader.read(hel);

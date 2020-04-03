@@ -37,7 +37,6 @@ import org.apache.cxf.common.i18n.BundleUtils;
 import org.apache.cxf.common.logging.LogUtils;
 import org.apache.cxf.common.util.PropertyUtils;
 import org.apache.cxf.endpoint.Endpoint;
-//import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.interceptor.OutgoingChainInterceptor;
 import org.apache.cxf.jaxrs.impl.MetadataMap;
@@ -126,7 +125,7 @@ public class JAXRSInInterceptor extends AbstractPhaseInterceptor<Message> {
         //Liberty code change start
         String httpMethod = ((MessageImpl) message).getHttpRequestMethod();
         if (httpMethod == null) {
-            httpMethod = HttpUtils.getProtocolHeader(message, Message.HTTP_REQUEST_METHOD,
+            httpMethod = HttpUtils.getFromHeaders(message, Message.HTTP_REQUEST_METHOD,
                                                         HttpMethod.POST, true);
         }
         //Liberty code change end
