@@ -314,6 +314,7 @@ public abstract class AbstractHTTPDestination
         //Liberty code change end
     }
 
+    //Liberty code change start
     protected void setupMessage(final Message message,
                                 final ServletConfig config,
                                 final ServletContext context,
@@ -324,6 +325,7 @@ public abstract class AbstractHTTPDestination
                           resp);
 
         MessageImpl inMessage = (MessageImpl) message;
+        //Liberty code change end
         final Exchange exchange = inMessage.getExchange();
         DelegatingInputStream in = new DelegatingInputStream(req.getInputStream()) {
             @Override

@@ -20,11 +20,16 @@
 package org.apache.cxf.message;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -54,57 +59,59 @@ public class MessageImpl extends StringMapImpl implements Message {
     private int index;
 
     //Liberty code change start
-    private Object protoHeaders = NOT_FOUND;
-    private Object opStack = NOT_FOUND;
-    private Object contentType = NOT_FOUND;
-    private Object destination = NOT_FOUND;
-    private Object queryString = NOT_FOUND;
-    private Object httpRequest = NOT_FOUND;
-    private Object httpResponse = NOT_FOUND;
-    private Object pathToMatchSlash = NOT_FOUND;
-    private Object httpRequestMethod = NOT_FOUND;
-    private Object interceptorProviders = NOT_FOUND;
-    private Object templateParameters = NOT_FOUND;
-    private Object accept = NOT_FOUND;
-    private Object continuationProvider = NOT_FOUND;
-    private Object wsdlDescription = NOT_FOUND;
-    private Object wsdlInterface = NOT_FOUND;
-    private Object wsdlOperation = NOT_FOUND;
-    private Object wsdlPort = NOT_FOUND;
-    private Object wsdlService = NOT_FOUND;
-    private Object requestUrl = NOT_FOUND;
-    private Object requestUri = NOT_FOUND;
-    private Object pathInfo = NOT_FOUND;
-    private Object basePath = NOT_FOUND;
-    private Object fixedParamOrder = NOT_FOUND;
-    private Object inInterceptors = NOT_FOUND;
-    private Object outInterceptors = NOT_FOUND;
-    private Object responseCode = NOT_FOUND;
-    private Object attachments = NOT_FOUND;
-    private Object encoding = NOT_FOUND;
-    private Object httpContext = NOT_FOUND;
-    private Object httpConfig = NOT_FOUND;
-    private Object httpContextMatchStrategy = NOT_FOUND;
-    private Object httpBasePath = NOT_FOUND;
-    private Object asyncPostDispatch = NOT_FOUND;
-    private Object securityContext = NOT_FOUND;
-    private Object authorizationPolicy = NOT_FOUND;
-    private Object certConstraints = NOT_FOUND;
-    private Object serviceRedirection = NOT_FOUND;
-    private Object httpServletResponse = NOT_FOUND;
-    private Object resourceMethod = NOT_FOUND;
-    private Object oneWayRequest = NOT_FOUND;
-    private Object asyncResponse = NOT_FOUND;
-    private Object threadContextSwitched = NOT_FOUND;
-    private Object cacheInputProperty = NOT_FOUND;
-    private Object previousMessage = NOT_FOUND;
-    private Object responseHeadersCopied = NOT_FOUND;
-    private Object sseEventSink = NOT_FOUND;
-    private Object requestorRole = NOT_FOUND;
-    private Object partialResponse = NOT_FOUND;
-    private Object emptyPartialResponse = NOT_FOUND;
-    private Object endpointAddress = NOT_FOUND;
-    private Object inboundMessage = NOT_FOUND;
+    private static int protoHeaders = 0;
+    private static int opStack = 1;
+    private static int contentType = 2;
+    private static int destination = 3;
+    private static int queryString = 4;
+    private static int httpRequest = 5;
+    private static int httpResponse = 6;
+    private static int pathToMatchSlash = 7;
+    private static int httpRequestMethod = 8;
+    private static int interceptorProviders = 9;
+    private static int templateParameters = 10;
+    private static int accept = 11;
+    private static int continuationProvider = 12;
+    private static int wsdlDescription = 13;
+    private static int wsdlInterface = 14;
+    private static int wsdlOperation = 15;
+    private static int wsdlPort = 16;
+    private static int wsdlService = 17;
+    private static int requestUrl = 18;
+    private static int requestUri = 19;
+    private static int pathInfo = 20;
+    private static int basePath = 21;
+    private static int fixedParamOrder = 22;
+    private static int inInterceptors = 23;
+    private static int outInterceptors = 24;
+    private static int responseCode = 25;
+    private static int attachments = 26;
+    private static int encoding = 27;
+    private static int httpContext = 28;
+    private static int httpConfig = 29;
+    private static int httpContextMatchStrategy = 30;
+    private static int httpBasePath = 31;
+    private static int asyncPostDispatch = 32;
+    private static int securityContext = 33;
+    private static int authorizationPolicy = 34;
+    private static int certConstraints = 35;
+    private static int serviceRedirection = 36;
+    private static int httpServletResponse = 37;
+    private static int resourceMethod = 38;
+    private static int oneWayRequest = 39;
+    private static int asyncResponse = 40;
+    private static int threadContextSwitched = 41;
+    private static int cacheInputProperty = 42;
+    private static int previousMessage = 43;
+    private static int responseHeadersCopied = 44;
+    private static int sseEventSink = 45;
+    private static int requestorRole = 46;
+    private static int partialResponse = 47;
+    private static int emptyPartialResponse = 48;
+    private static int endpointAddress = 49;
+    private static int inboundMessage = 50;
+    private static int TOTAL = 51;
+    private Object[] propertyValues = new Object[TOTAL];
     
     private static final String REQUEST_PATH_TO_MATCH_SLASH = "path_to_match_slash";
     private static final String TEMPLATE_PARAMETERS = "jaxrs.template.parameters";
@@ -119,72 +126,133 @@ public class MessageImpl extends StringMapImpl implements Message {
     private static final String RESOURCE_METHOD = "org.apache.cxf.resource.method";
     private static final String ASYNC_RESPONSE = "javax.ws.rs.container.AsyncResponse";
     private static final String SSE_EVENT_SINK = "javax.ws.rs.sse.SseEventSink";
-    private static final Set<String> KEYS;
+    private static final Map<String, Integer> KEYMAP;
+    private static String[] propertyNames = new String[TOTAL];
 
+    private static final Object NOT_FOUND = new Object();
+    private static final Integer KEY_NOT_FOUND = Integer.valueOf(-1);
+    
     static {
-        Set<String> keys = new HashSet<String>();
-        keys.add(CONTENT_TYPE);
-        keys.add(PROTOCOL_HEADERS);
-        keys.add(QUERY_STRING);
-        keys.add(AbstractHTTPDestination.HTTP_REQUEST);
-        keys.add(AbstractHTTPDestination.HTTP_RESPONSE);
-        keys.add(REQUEST_PATH_TO_MATCH_SLASH);
-        keys.add(HTTP_REQUEST_METHOD);
-        keys.add(INTERCEPTOR_PROVIDERS);
-        keys.add(TEMPLATE_PARAMETERS);
-        keys.add(ACCEPT_CONTENT_TYPE);
-        keys.add(CONTINUATION_PROVIDER);
-        keys.add(DESTINATION);
-        keys.add(OP_RES_INFO_STACK);
-        keys.add(WSDL_DESCRIPTION);
-        keys.add(WSDL_INTERFACE);
-        keys.add(WSDL_OPERATION);
-        keys.add(WSDL_PORT);
-        keys.add(WSDL_SERVICE);
-        keys.add(REQUEST_URL);
-        keys.add(REQUEST_URI);
-        keys.add(PATH_INFO);
-        keys.add(BASE_PATH);
-        keys.add(FIXED_PARAMETER_ORDER);
-        keys.add(IN_INTERCEPTORS);
-        keys.add(OUT_INTERCEPTORS);
-        keys.add(RESPONSE_CODE);
-        keys.add(ATTACHMENTS);
-        keys.add(ENCODING);
-        keys.add(AbstractHTTPDestination.HTTP_CONTEXT);
-        keys.add(AbstractHTTPDestination.HTTP_CONFIG);
-        keys.add(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY);
-        keys.add(HTTP_BASE_PATH);
-        keys.add(ASYNC_POST_RESPONSE_DISPATCH);
-        keys.add(SECURITY_CONTEXT);
-        keys.add(AUTHORIZATION_POLICY);
-        keys.add(CERT_CONSTRAINTS);
-        keys.add(AbstractHTTPDestination.SERVICE_REDIRECTION);
-        keys.add(HTTP_SERVLET_RESPONSE);
-        keys.add(RESOURCE_METHOD);
-        keys.add(ONE_WAY_REQUEST);
-        keys.add(ASYNC_RESPONSE);
-        keys.add(THREAD_CONTEXT_SWITCHED);
-        keys.add(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY);
-        keys.add(PhaseInterceptorChain.PREVIOUS_MESSAGE);
-        keys.add(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED);
-        keys.add(SSE_EVENT_SINK);
-        keys.add(REQUESTOR_ROLE);
-        keys.add(PARTIAL_RESPONSE_MESSAGE);
-        keys.add(EMPTY_PARTIAL_RESPONSE_MESSAGE);
-        keys.add(ENDPOINT_ADDRESS);
-        keys.add(INBOUND_MESSAGE);
-        KEYS = Collections.unmodifiableSet(keys);
+        Map<String, Integer> keymap = new HashMap<String, Integer>(TOTAL);
+        propertyNames[contentType] = CONTENT_TYPE;
+        keymap.put(CONTENT_TYPE, contentType);
+        propertyNames[protoHeaders] = PROTOCOL_HEADERS;
+        keymap.put(PROTOCOL_HEADERS, protoHeaders);
+        propertyNames[queryString] = QUERY_STRING;
+        keymap.put(QUERY_STRING, queryString);
+        propertyNames[httpRequest] = AbstractHTTPDestination.HTTP_REQUEST;
+        keymap.put(AbstractHTTPDestination.HTTP_REQUEST, httpRequest);
+        propertyNames[httpResponse] = AbstractHTTPDestination.HTTP_RESPONSE;
+        keymap.put(AbstractHTTPDestination.HTTP_RESPONSE, httpResponse);
+        propertyNames[pathToMatchSlash] = REQUEST_PATH_TO_MATCH_SLASH;
+        keymap.put(REQUEST_PATH_TO_MATCH_SLASH, pathToMatchSlash);
+        propertyNames[httpRequestMethod] = HTTP_REQUEST_METHOD;
+        keymap.put(HTTP_REQUEST_METHOD, httpRequestMethod);
+        propertyNames[interceptorProviders] = INTERCEPTOR_PROVIDERS;
+        keymap.put(INTERCEPTOR_PROVIDERS, interceptorProviders);
+        propertyNames[templateParameters] = TEMPLATE_PARAMETERS;
+        keymap.put(TEMPLATE_PARAMETERS, templateParameters);
+        propertyNames[accept] = ACCEPT_CONTENT_TYPE;
+        keymap.put(ACCEPT_CONTENT_TYPE, accept);
+        propertyNames[continuationProvider] = CONTINUATION_PROVIDER;
+        keymap.put(CONTINUATION_PROVIDER, continuationProvider);
+        propertyNames[destination] = DESTINATION;
+        keymap.put(DESTINATION, destination);
+        propertyNames[opStack] = OP_RES_INFO_STACK;
+        keymap.put(OP_RES_INFO_STACK, opStack);
+        propertyNames[wsdlDescription] = WSDL_DESCRIPTION;
+        keymap.put(WSDL_DESCRIPTION, wsdlDescription);
+        propertyNames[wsdlInterface] = WSDL_INTERFACE;
+        keymap.put(WSDL_INTERFACE, wsdlInterface);
+        propertyNames[wsdlOperation] = WSDL_OPERATION;
+        keymap.put(WSDL_OPERATION, wsdlOperation);
+        propertyNames[wsdlPort] = WSDL_PORT;
+        keymap.put(WSDL_PORT, wsdlPort);
+        propertyNames[wsdlService] = WSDL_SERVICE;
+        keymap.put(WSDL_SERVICE, wsdlService);
+        propertyNames[requestUrl] = REQUEST_URL;
+        keymap.put(REQUEST_URL, requestUrl);
+        propertyNames[requestUri] = REQUEST_URI;
+        keymap.put(REQUEST_URI, requestUri);
+        propertyNames[pathInfo] = PATH_INFO;
+        keymap.put(PATH_INFO, pathInfo);
+        propertyNames[basePath] = BASE_PATH;
+        keymap.put(BASE_PATH, basePath);
+        propertyNames[fixedParamOrder] = FIXED_PARAMETER_ORDER;
+        keymap.put(FIXED_PARAMETER_ORDER, fixedParamOrder);
+        propertyNames[inInterceptors] = IN_INTERCEPTORS;
+        keymap.put(IN_INTERCEPTORS, inInterceptors);
+        propertyNames[outInterceptors] = OUT_INTERCEPTORS;
+        keymap.put(OUT_INTERCEPTORS, outInterceptors);
+        propertyNames[responseCode] = RESPONSE_CODE;
+        keymap.put(RESPONSE_CODE, responseCode);
+        propertyNames[attachments] = ATTACHMENTS;
+        keymap.put(ATTACHMENTS, attachments);
+        propertyNames[encoding] = ENCODING;
+        keymap.put(ENCODING, encoding);
+        propertyNames[httpContext] = AbstractHTTPDestination.HTTP_CONTEXT;
+        keymap.put(AbstractHTTPDestination.HTTP_CONTEXT, httpContext);
+        propertyNames[httpConfig] = AbstractHTTPDestination.HTTP_CONFIG;
+        keymap.put(AbstractHTTPDestination.HTTP_CONFIG, httpConfig);
+        propertyNames[httpContextMatchStrategy] = AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY;
+        keymap.put(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY, httpContextMatchStrategy);
+        propertyNames[httpBasePath] = HTTP_BASE_PATH;
+        keymap.put(HTTP_BASE_PATH, httpBasePath);
+        propertyNames[asyncPostDispatch] = ASYNC_POST_RESPONSE_DISPATCH;
+        keymap.put(ASYNC_POST_RESPONSE_DISPATCH, asyncPostDispatch);
+        propertyNames[securityContext] = SECURITY_CONTEXT;
+        keymap.put(SECURITY_CONTEXT, securityContext);
+        propertyNames[authorizationPolicy] = AUTHORIZATION_POLICY;
+        keymap.put(AUTHORIZATION_POLICY, authorizationPolicy);
+        propertyNames[certConstraints] = CERT_CONSTRAINTS;
+        keymap.put(CERT_CONSTRAINTS, certConstraints);
+        propertyNames[serviceRedirection] = AbstractHTTPDestination.SERVICE_REDIRECTION;
+        keymap.put(AbstractHTTPDestination.SERVICE_REDIRECTION, serviceRedirection);
+        propertyNames[httpServletResponse] = HTTP_SERVLET_RESPONSE;
+        keymap.put(HTTP_SERVLET_RESPONSE, httpServletResponse);
+        propertyNames[resourceMethod] = RESOURCE_METHOD;
+        keymap.put(RESOURCE_METHOD, resourceMethod);
+        propertyNames[oneWayRequest] = ONE_WAY_REQUEST;
+        keymap.put(ONE_WAY_REQUEST, oneWayRequest);
+        propertyNames[asyncResponse] = ASYNC_RESPONSE;
+        keymap.put(ASYNC_RESPONSE, asyncResponse);
+        propertyNames[threadContextSwitched] = THREAD_CONTEXT_SWITCHED;
+        keymap.put(THREAD_CONTEXT_SWITCHED, threadContextSwitched);
+        propertyNames[cacheInputProperty] = OutgoingChainInterceptor.CACHE_INPUT_PROPERTY;
+        keymap.put(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY, cacheInputProperty);
+        propertyNames[previousMessage] = PhaseInterceptorChain.PREVIOUS_MESSAGE;
+        keymap.put(PhaseInterceptorChain.PREVIOUS_MESSAGE, previousMessage);
+        propertyNames[responseHeadersCopied] = AbstractHTTPDestination.RESPONSE_HEADERS_COPIED;
+        keymap.put(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED, responseHeadersCopied);
+        propertyNames[sseEventSink] = SSE_EVENT_SINK;
+        keymap.put(SSE_EVENT_SINK, sseEventSink);
+        propertyNames[requestorRole] = REQUESTOR_ROLE;
+        keymap.put(REQUESTOR_ROLE, requestorRole);
+        propertyNames[partialResponse] = PARTIAL_RESPONSE_MESSAGE;
+        keymap.put(PARTIAL_RESPONSE_MESSAGE, partialResponse);
+        propertyNames[emptyPartialResponse] = EMPTY_PARTIAL_RESPONSE_MESSAGE;
+        keymap.put(EMPTY_PARTIAL_RESPONSE_MESSAGE, emptyPartialResponse);
+        propertyNames[endpointAddress] = ENDPOINT_ADDRESS;
+        keymap.put(ENDPOINT_ADDRESS, endpointAddress);
+        propertyNames[inboundMessage] = INBOUND_MESSAGE;
+        keymap.put(INBOUND_MESSAGE, inboundMessage);
+        KEYMAP = Collections.unmodifiableMap(keymap);
     }
     //Liberty code change end
 
     // Liberty change - used to avoid resize
     public MessageImpl(int isize, float factor) {
         super(isize, factor);
+        for (int i = 0; i < TOTAL; i++) {
+            propertyValues[i] = NOT_FOUND;
+        }
     }
 
     public MessageImpl() {
         //nothing
+        for (int i = 0; i < TOTAL; i++) {
+            propertyValues[i] = NOT_FOUND;
+        }
     }
 
     public MessageImpl(Message m) {
@@ -196,6 +264,9 @@ public class MessageImpl extends StringMapImpl implements Message {
             interceptorChain = impl.interceptorChain;
             contents = impl.contents;
             index = impl.index;
+            for (int i = 0; i < TOTAL; i++) {
+                propertyValues[i] = NOT_FOUND;
+            }
         } else {
             throw new RuntimeException("Not a MessageImpl! " + m.getClass());
         }
@@ -205,14 +276,14 @@ public class MessageImpl extends StringMapImpl implements Message {
     @Override
     public Collection<Attachment> getAttachments() {
         //Liberty code change start
-        return attachments == NOT_FOUND ? null : (Collection<Attachment>) attachments;
+        return (Collection<Attachment>) getFromPropertyArray(attachments);
         //Liberty code change end
     }
 
     @Override
-    public void setAttachments(Collection<Attachment> attachments) {
+    public void setAttachments(Collection<Attachment> a) {
         //Liberty code change start
-        this.attachments = attachments;
+        propertyValues[attachments] = a;
         //Liberty code change end
     }
 
@@ -224,7 +295,7 @@ public class MessageImpl extends StringMapImpl implements Message {
     @Override
     public Destination getDestination() {
         //Liberty code change start
-        return destination == NOT_FOUND ? null : (Destination) destination;
+        return (Destination) getFromPropertyArray(destination);
         //Liberty code change start
     }
 
@@ -302,7 +373,7 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     public void setDestination(Destination d) {
         //Liberty code change start
-    	destination = d;
+    	propertyValues[destination] = d;
         //Liberty code change end
     }
 
@@ -324,222 +395,17 @@ public class MessageImpl extends StringMapImpl implements Message {
     //Liberty code change start
     // Since these maps can have null value, use the getOrDefault API
     // to prevent calling get twice under the covers
-    private static final Object NOT_FOUND = new Object();
-    
     @Override
     public Object getContextualProperty(String key) {
         //Liberty code change start
-        Object o = null;
-        if (KEYS.contains(key)) {
-            if (key == PROTOCOL_HEADERS) {
-                if (protoHeaders != NOT_FOUND) {
-                    return protoHeaders;
-                }
-            } else if (key == CONTENT_TYPE) {
-                if (contentType != NOT_FOUND) {
-                    return contentType;
-                }
-            } else if (key == QUERY_STRING) {
-                if (queryString != NOT_FOUND) {
-                    return queryString;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                if (httpRequest != NOT_FOUND) {
-                    return httpRequest;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                if (httpResponse != NOT_FOUND) {
-                    return httpResponse;
-                }
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                if (pathToMatchSlash != NOT_FOUND) {
-                    return pathToMatchSlash;
-                }
-            } else if (key == HTTP_REQUEST_METHOD) {
-                if (httpRequestMethod != NOT_FOUND) {
-                    return httpRequestMethod;
-                }
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                if (interceptorProviders != NOT_FOUND) {
-                    return interceptorProviders;
-                }
-            } else if (key == TEMPLATE_PARAMETERS) {
-                if (templateParameters != NOT_FOUND) {
-                    return templateParameters;
-                }
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                if (accept != NOT_FOUND) {
-                    return accept;
-                }
-            } else if (key == CONTINUATION_PROVIDER) {
-                if (continuationProvider != NOT_FOUND) {
-                    return continuationProvider;
-                }
-            } else if (key == OP_RES_INFO_STACK) {
-                if (opStack != NOT_FOUND) {
-                    return opStack;
-                }
-            } else if (key == DESTINATION) {
-                if (destination != NOT_FOUND) {
-                    return destination;
-                }
-            } else if (key == WSDL_DESCRIPTION) {
-                if (wsdlDescription != NOT_FOUND) {
-                    return wsdlDescription;
-                }
-            } else if (key == WSDL_INTERFACE) {
-                if (wsdlInterface != NOT_FOUND) {
-                    return wsdlInterface;
-                }
-            } else if (key == WSDL_OPERATION) {
-                if (wsdlOperation != NOT_FOUND) {
-                    return wsdlOperation;
-                }
-            } else if (key == WSDL_PORT) {
-                if (wsdlPort != NOT_FOUND) {
-                    return wsdlPort;
-                }
-            } else if (key == WSDL_SERVICE) {
-                if (wsdlService != NOT_FOUND) {
-                    return wsdlService;
-                }
-            } else if (key == REQUEST_URL) {
-                if (requestUrl != NOT_FOUND) {
-                    return requestUrl;
-                }
-            } else if (key == REQUEST_URI) {
-                if (requestUri != NOT_FOUND) {
-                    return requestUri;
-                }
-            } else if (key == PATH_INFO) {
-                if (pathInfo != NOT_FOUND) {
-                    return pathInfo;
-                }
-            } else if (key == BASE_PATH) {
-                if (basePath != NOT_FOUND) {
-                    return basePath;
-                }
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                if (fixedParamOrder != NOT_FOUND) {
-                    return fixedParamOrder;
-                }
-            } else if (key == IN_INTERCEPTORS) {
-                if (inInterceptors != NOT_FOUND) {
-                    return inInterceptors;
-                }
-            } else if (key == OUT_INTERCEPTORS) {
-                if (outInterceptors != NOT_FOUND) {
-                    return outInterceptors;
-                }
-            } else if (key == RESPONSE_CODE) {
-                if (responseCode != NOT_FOUND) {
-                    return responseCode;
-                }
-            } else if (key == ATTACHMENTS) {
-                if (attachments != NOT_FOUND) {
-                    return attachments;
-                }
-            } else if (key == ENCODING) {
-                if (encoding != NOT_FOUND) {
-                    return encoding;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                if (httpContext != NOT_FOUND) {
-                    return httpContext;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                if (httpConfig != NOT_FOUND) {
-                    return httpConfig;
-                }
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                if (httpContextMatchStrategy != NOT_FOUND) {
-                    return httpContextMatchStrategy;
-                }
-            } else if (key == HTTP_BASE_PATH) {
-                if (httpBasePath != NOT_FOUND) {
-                    return httpBasePath;
-                }
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                if (asyncPostDispatch != NOT_FOUND) {
-                    return asyncPostDispatch;
-                }
-            } else if (key == SECURITY_CONTEXT) {
-                if (securityContext != NOT_FOUND) {
-                    return securityContext;
-                }
-            } else if (key == AUTHORIZATION_POLICY) {
-                if (authorizationPolicy != NOT_FOUND) {
-                    return authorizationPolicy;
-                }
-            } else if (key == CERT_CONSTRAINTS) {
-                if (certConstraints != NOT_FOUND) {
-                    return certConstraints;
-                }
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                if (serviceRedirection != NOT_FOUND) {
-                    return serviceRedirection;
-                }
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                if (httpServletResponse != NOT_FOUND) {
-                    return httpServletResponse;
-                }
-            } else if (key == RESOURCE_METHOD) {
-                if (resourceMethod != NOT_FOUND) {
-                    return resourceMethod;
-                }
-            } else if (key == ONE_WAY_REQUEST) {
-                if (oneWayRequest != NOT_FOUND) {
-                    return oneWayRequest;
-                }
-            } else if (key == ASYNC_RESPONSE) {
-                if (asyncResponse != NOT_FOUND) {
-                    return asyncResponse;
-                }
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                if (threadContextSwitched != NOT_FOUND) {
-                    return threadContextSwitched;
-                }
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                if (cacheInputProperty != NOT_FOUND) {
-                    return cacheInputProperty;
-                }
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                if (previousMessage != NOT_FOUND) {
-                    return previousMessage;
-                }
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                if (responseHeadersCopied != NOT_FOUND) {
-                    return responseHeadersCopied;
-                }
-            } else if (key == SSE_EVENT_SINK) {
-                if (sseEventSink != NOT_FOUND) {
-                    return sseEventSink;
-                }
-            } else if (key == REQUESTOR_ROLE) {
-                if (requestorRole != NOT_FOUND) {
-                    return requestorRole;
-                }
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                if (partialResponse != NOT_FOUND) {
-                    return partialResponse;
-                }
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                if (emptyPartialResponse != NOT_FOUND) {
-                    return emptyPartialResponse;
-                }
-            } else if (key == ENDPOINT_ADDRESS) {
-                if (endpointAddress != NOT_FOUND) {
-                    return endpointAddress;
-                }
-            } else if (key == INBOUND_MESSAGE) {
-                if (inboundMessage != NOT_FOUND) {
-                    return inboundMessage;
-                }
-            }
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            Object value = propertyValues[index];
+            return value == NOT_FOUND ? null : value;
         }
         //Liberty code change end
 
-        o = getOrDefault(key, NOT_FOUND);
+        Object o = getOrDefault(key, NOT_FOUND);
         if (o != NOT_FOUND) {
             return o;
         }
@@ -655,174 +521,25 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     @SuppressWarnings("rawtypes")
     public Map getProtocolHeaders() {
-        return protoHeaders == NOT_FOUND ? null : (Map) protoHeaders;
+        return (Map) getFromPropertyArray(protoHeaders);
     }
     
     @SuppressWarnings("rawtypes")
-    public void setProtocolHeaders(Map protoHeaders) {
-        this.protoHeaders = protoHeaders;
+    public void setProtocolHeaders(Map p) {
+        propertyValues[protoHeaders] = p;
     }
     
     @Override
     public Object remove(Object key) {
-        if (KEYS.contains(key)) {
-            Object ret = null;
-            if (key == PROTOCOL_HEADERS) {
-                ret = protoHeaders;
-                protoHeaders = NOT_FOUND;
-            } else if (key == CONTENT_TYPE) {
-                ret = contentType;
-                contentType = NOT_FOUND;
-            } else if (key == QUERY_STRING) {
-                ret = queryString;
-                queryString = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                ret = httpRequest;
-                httpRequest = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                ret = httpResponse;
-                httpResponse = NOT_FOUND;
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                ret = pathToMatchSlash;
-                pathToMatchSlash = NOT_FOUND;
-            } else if (key == HTTP_REQUEST_METHOD) {
-                ret = httpRequestMethod;
-                httpRequestMethod = NOT_FOUND;
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                ret = interceptorProviders;
-                interceptorProviders = NOT_FOUND;
-            } else if (key == TEMPLATE_PARAMETERS) {
-                ret = templateParameters;
-                templateParameters = NOT_FOUND;
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                ret = accept;
-                accept = NOT_FOUND;
-            } else if (key == CONTINUATION_PROVIDER) {
-                ret = continuationProvider;
-                continuationProvider = NOT_FOUND;
-            } else if (key == OP_RES_INFO_STACK) {
-                ret = opStack;
-                opStack = NOT_FOUND;
-            } else if (key == DESTINATION) {
-                ret = destination;
-                destination = NOT_FOUND;
-            } else if (key == WSDL_DESCRIPTION) {
-                ret = wsdlDescription;
-                wsdlDescription = NOT_FOUND;
-            } else if (key == WSDL_INTERFACE) {
-                ret = wsdlInterface;
-                wsdlInterface = NOT_FOUND;
-            } else if (key == WSDL_OPERATION) {
-                ret = wsdlOperation;
-                wsdlOperation = NOT_FOUND;
-            } else if (key == WSDL_PORT) {
-                ret = wsdlPort;
-                wsdlPort = NOT_FOUND;
-            } else if (key == WSDL_SERVICE) {
-                ret = wsdlService;
-                wsdlService = NOT_FOUND;
-            } else if (key == REQUEST_URL) {
-                ret = requestUrl;
-                requestUrl = NOT_FOUND;
-            } else if (key == REQUEST_URI) {
-                ret = requestUri;
-                requestUri = NOT_FOUND;
-            } else if (key == PATH_INFO) {
-                ret = pathInfo;
-                pathInfo = NOT_FOUND;
-            } else if (key == BASE_PATH) {
-                ret = basePath;
-                basePath = NOT_FOUND;
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                ret = fixedParamOrder;
-                fixedParamOrder = NOT_FOUND;
-            } else if (key == IN_INTERCEPTORS) {
-                ret = inInterceptors;
-                inInterceptors = NOT_FOUND;
-            } else if (key == OUT_INTERCEPTORS) {
-                ret = outInterceptors;
-                outInterceptors = NOT_FOUND;
-            } else if (key == RESPONSE_CODE) {
-                ret = responseCode;
-                responseCode = NOT_FOUND;
-            } else if (key == ATTACHMENTS) {
-                ret = attachments;
-                attachments = NOT_FOUND;
-            } else if (key == ENCODING) {
-                ret = encoding;
-                encoding = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                ret = httpContext;
-                httpContext = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                ret = httpConfig;
-                httpConfig = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                ret = httpContextMatchStrategy;
-                httpContextMatchStrategy = NOT_FOUND;
-            } else if (key == HTTP_BASE_PATH) {
-                ret = httpBasePath;
-                httpBasePath = NOT_FOUND;
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                ret = asyncPostDispatch;
-                asyncPostDispatch = NOT_FOUND;
-            } else if (key == SECURITY_CONTEXT) {
-                ret = securityContext;
-                securityContext = NOT_FOUND;
-            } else if (key == AUTHORIZATION_POLICY) {
-                ret = authorizationPolicy;
-                authorizationPolicy = NOT_FOUND;
-            } else if (key == CERT_CONSTRAINTS) {
-                ret = certConstraints;
-                certConstraints = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                ret = serviceRedirection;
-                serviceRedirection = NOT_FOUND;
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                ret = httpServletResponse;
-                httpServletResponse = NOT_FOUND;
-            } else if (key == RESOURCE_METHOD) {
-                ret = resourceMethod;
-                resourceMethod = NOT_FOUND;
-            } else if (key == ONE_WAY_REQUEST) {
-                ret = oneWayRequest;
-                oneWayRequest = NOT_FOUND;
-            } else if (key == ASYNC_RESPONSE) {
-                ret = asyncResponse;
-                asyncResponse = NOT_FOUND;
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                ret = threadContextSwitched;
-                threadContextSwitched = NOT_FOUND;
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                ret = cacheInputProperty;
-                cacheInputProperty = NOT_FOUND;
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                ret = previousMessage;
-                previousMessage = NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                ret = responseHeadersCopied;
-                responseHeadersCopied = NOT_FOUND;
-            } else if (key == SSE_EVENT_SINK) {
-                ret = sseEventSink;
-                sseEventSink = NOT_FOUND;
-            } else if (key == REQUESTOR_ROLE) {
-                ret = requestorRole;
-                requestorRole = NOT_FOUND;
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                ret = partialResponse;
-                partialResponse = NOT_FOUND;
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                ret = emptyPartialResponse;
-                emptyPartialResponse = NOT_FOUND;
-            } else if (key == ENDPOINT_ADDRESS) {
-                ret = endpointAddress;
-                endpointAddress = NOT_FOUND;
-            } else if (key == INBOUND_MESSAGE) {
-                ret = inboundMessage;
-                inboundMessage = NOT_FOUND;
-            }
-
-            return ret == NOT_FOUND ? null : ret;
+        return remove((String) key);
+    }
+    
+    public Object remove(String key) {
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            Object ret = getFromPropertyArray(index);
+            propertyValues[index] = NOT_FOUND;
+            return ret;
         }
         return super.remove(key);
     }
@@ -844,283 +561,21 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
 
     public Object get(String key) {
-        if (KEYS.contains(key)) {
-            if (key == PROTOCOL_HEADERS) {
-                return getProtocolHeaders();
-            } else if (key == CONTENT_TYPE) {
-                return getContentType();
-            } else if (key == QUERY_STRING) {
-                return getQueryString();
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                return getHttpRequest();
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                return getHttpResponse();
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                return getPathToMatchSlash();
-            } else if (key == HTTP_REQUEST_METHOD) {
-                return getHttpRequestMethod();
-            } else if (key == QUERY_STRING) {
-                return getQueryString();
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                return getHttpRequest();
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                return getHttpResponse();
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                return getPathToMatchSlash();
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                return getInterceptorProviders();
-            } else if (key == TEMPLATE_PARAMETERS) {
-                return getTemplateParameters();
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                return getAccept();
-            } else if (key == CONTINUATION_PROVIDER) {
-                return getContinuationProvider();
-            } else if (key == OP_RES_INFO_STACK) {
-                return getOperationResourceInfoStack();
-            } else if (key == DESTINATION) {
-                return getDestination();
-            } else if (key == WSDL_DESCRIPTION) {
-                return getWsdlDescription();
-            } else if (key == WSDL_INTERFACE) {
-                return getWsdlInterface();
-            } else if (key == WSDL_OPERATION) {
-                return getWsdlOperation();
-            } else if (key == WSDL_PORT) {
-                return getWsdlPort();
-            } else if (key == WSDL_SERVICE) {
-                return getWsdlService();
-            } else if (key == REQUEST_URL) {
-                return getRequestUrl();
-            } else if (key == REQUEST_URI) {
-                return getRequestUri();
-            } else if (key == PATH_INFO) {
-                return getPathInfo();
-            } else if (key == BASE_PATH) {
-                return getBasePath();
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                return getFixedParamOrder();
-            } else if (key == IN_INTERCEPTORS) {
-                return getInInterceptors();
-            } else if (key == OUT_INTERCEPTORS) {
-                return getOutInterceptors();
-            } else if (key == RESPONSE_CODE) {
-                return getResponseCode();
-            } else if (key == ATTACHMENTS) {
-                return getAttachments();
-            } else if (key == ENCODING) {
-                return getEncoding();
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                return getHttpContext();
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                return getHttpConfig();
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                return getHttpContextMatchStrategy();
-            } else if (key == HTTP_BASE_PATH) {
-                return getHttpBasePath();
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                return getAsyncPostDispatch();
-            } else if (key == SECURITY_CONTEXT) {
-                return getSecurityContext();
-            } else if (key == AUTHORIZATION_POLICY) {
-                return getAuthorizationPolicy();
-            } else if (key == CERT_CONSTRAINTS) {
-                return getCertConstraints();
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                return getServiceRedirection();
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                return getHttpServletResponse();
-            } else if (key == RESOURCE_METHOD) {
-                return getResourceMethod();
-            } else if (key == ONE_WAY_REQUEST) {
-                return getOneWayRequest();
-            } else if (key == ASYNC_RESPONSE) {
-                return getAsyncResponse();
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                return getThreadContextSwitched();
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                return getCacheInputProperty();
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                return getPreviousMessage();
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                return getResponseHeadersCopied();
-            } else if (key == SSE_EVENT_SINK) {
-                return getSseEventSink();
-            } else if (key == REQUESTOR_ROLE) {
-                return getRequestorRole();
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                return getPartialResponse();
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                return getEmptyPartialResponse();
-            } else if (key == ENDPOINT_ADDRESS) {
-                return getEndpointAddress();
-            } else if (key == INBOUND_MESSAGE) {
-                return getInboundMessage();
-            }
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            return getFromPropertyArray(index);
         }
         
         return super.get(key);
     }
 
     @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object put(String key, Object value) {
-        if (KEYS.contains(key)) {
-            Object ret = null;
-            if (key == PROTOCOL_HEADERS) {
-                ret = getProtocolHeaders();
-                setProtocolHeaders((Map) value);
-            } else if (key == CONTENT_TYPE) {
-                ret = getContentType();
-                setContentType((String) value);
-            } else if (key == QUERY_STRING) {
-                ret = getQueryString();
-                setQueryString((String) value);
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                ret = getHttpRequest();
-                setHttpRequest(value);
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                ret = getHttpResponse();
-                setHttpResponse(value);
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                ret = getPathToMatchSlash();
-                setPathToMatchSlash((String) value);
-            } else if (key == HTTP_REQUEST_METHOD) {
-                ret = getHttpRequestMethod();
-                setHttpRequestMethod((String) value);
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                ret = getInterceptorProviders();
-                setInterceptorProviders((Collection) value);
-            } else if (key == TEMPLATE_PARAMETERS) {
-                ret = getTemplateParameters();
-                setTemplateParameters(value);
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                ret = getAccept();
-                setAccept(value);
-            } else if (key == CONTINUATION_PROVIDER) {
-                ret = getContinuationProvider();
-                setContinuationProvider(value);
-            } else if (key == OP_RES_INFO_STACK) {
-                ret = getOperationResourceInfoStack();
-                setOperationResourceInfoStack(value);
-            } else if (key == DESTINATION) {
-                ret = getDestination();
-                setDestination((Destination) value);
-            } else if (key == WSDL_DESCRIPTION) {
-                ret = getWsdlDescription();
-                setWsdlDescription(value);
-            } else if (key == WSDL_INTERFACE) {
-                ret = getWsdlInterface();
-                setWsdlInterface(value);
-            } else if (key == WSDL_OPERATION) {
-                ret = getWsdlOperation();
-                setWsdlOperation(value);
-            } else if (key == WSDL_PORT) {
-                ret = getWsdlPort();
-                setWsdlPort(value);
-            } else if (key == WSDL_SERVICE) {
-                ret = getWsdlService();
-                setWsdlService(value);
-            } else if (key == REQUEST_URL) {
-                ret = getRequestUrl();
-                setRequestUrl(value);
-            } else if (key == REQUEST_URI) {
-                ret = getRequestUri();
-                setRequestUri(value);
-            } else if (key == PATH_INFO) {
-                ret = getPathInfo();
-                setPathInfo(value);
-            } else if (key == BASE_PATH) {
-                ret = getBasePath();
-                setBasePath(value);
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                ret = getFixedParamOrder();
-                setFixedParamOrder(value);
-            } else if (key == IN_INTERCEPTORS) {
-                ret = getInInterceptors();
-                setInInterceptors(value);
-            } else if (key == OUT_INTERCEPTORS) {
-                ret = getOutInterceptors();
-                setOutInterceptors(value);
-            } else if (key == RESPONSE_CODE) {
-                ret = getResponseCode();
-                setResponseCode(value);
-            } else if (key == ATTACHMENTS) {
-                ret = getAttachments();
-                setAttachments((Collection<Attachment>) value);
-            } else if (key == ENCODING) {
-                ret = getEncoding();
-                setEncoding(value);
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                ret = getHttpContext();
-                setHttpContext(value);
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                ret = getHttpConfig();
-                setHttpConfig(value);
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                ret = getHttpContextMatchStrategy();
-                setHttpContextMatchStrategy(value);
-            } else if (key == HTTP_BASE_PATH) {
-                ret = getHttpBasePath();
-                setHttpBasePath(value);
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                ret = getAsyncPostDispatch();
-                setAsyncPostDispatch(value);
-            } else if (key == SECURITY_CONTEXT) {
-                ret = getSecurityContext();
-                setSecurityContext(value);
-            } else if (key == AUTHORIZATION_POLICY) {
-                ret = getAuthorizationPolicy();
-                setAuthorizationPolicy(value);
-            } else if (key == CERT_CONSTRAINTS) {
-                ret = getCertConstraints();
-                setCertConstraints(value);
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                ret = getServiceRedirection();
-                setServiceRedirection(value);
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                ret = getHttpServletResponse();
-                setHttpServletResponse(value);
-            } else if (key == RESOURCE_METHOD) {
-                ret = getResourceMethod();
-                setResourceMethod(value);
-            } else if (key == ONE_WAY_REQUEST) {
-                ret = getOneWayRequest();
-                setOneWayRequest(value);
-            } else if (key == ASYNC_RESPONSE) {
-                ret = getAsyncResponse();
-                setAsyncResponse(value);
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                ret = getThreadContextSwitched();
-                setThreadContextSwitched(value);
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                ret = getCacheInputProperty();
-                setCacheInputProperty(value);
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                ret = getPreviousMessage();
-                setPreviousMessage(value);
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                ret = getResponseHeadersCopied();
-                setResponseHeadersCopied(value);
-            } else if (key == SSE_EVENT_SINK) {
-                ret = getSseEventSink();
-                setSseEventSink(value);
-            } else if (key == REQUESTOR_ROLE) {
-                ret = getRequestorRole();
-                setRequestorRole(value);
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                ret = getPartialResponse();
-                setPartialResponse(value);
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                ret = getEmptyPartialResponse();
-                setEmptyPartialResponse(value);
-            } else if (key == ENDPOINT_ADDRESS) {
-                ret = getEndpointAddress();
-                setEndpointAddress(value);
-            } else if (key == INBOUND_MESSAGE) {
-                ret = getInboundMessage();
-                setInboundMessage(value);
-            }
-            return ret == NOT_FOUND ? null : ret;
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            Object ret = getFromPropertyArray(index);
+            propertyValues[index] = value;
+            return ret;
         }
 
         return super.put(key, value);
@@ -1128,1223 +583,627 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     @Override
     public Set<String> keySet() {
-        Set<String> keys = super.keySet();
-        if (protoHeaders != NOT_FOUND) {
-            keys.add(PROTOCOL_HEADERS);
-        } 
-        if (contentType != NOT_FOUND) {
-            keys.add(CONTENT_TYPE);
-        }
-        if (queryString != NOT_FOUND) {
-            keys.add(QUERY_STRING);
-        }
-        if (httpRequest != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.HTTP_REQUEST);
-        }
-        if (httpResponse != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.HTTP_RESPONSE);
-        }
-        if (pathToMatchSlash != NOT_FOUND) {
-            keys.add(REQUEST_PATH_TO_MATCH_SLASH);
-        }
-        if (httpRequestMethod != NOT_FOUND) {
-            keys.add(HTTP_REQUEST_METHOD);
-        }
-        if (interceptorProviders != NOT_FOUND) {
-            keys.add(INTERCEPTOR_PROVIDERS);
-        }
-        if (templateParameters != NOT_FOUND) {
-            keys.add(TEMPLATE_PARAMETERS);
-        }
-        if (accept != NOT_FOUND) {
-            keys.add(ACCEPT_CONTENT_TYPE);
-        }
-        if (continuationProvider != NOT_FOUND) {
-            keys.add(CONTINUATION_PROVIDER);
-        }
-        if (opStack != NOT_FOUND) {
-            keys.add(OP_RES_INFO_STACK);
-        }
-        if (destination != NOT_FOUND) {
-            keys.add(DESTINATION);
-        }
-        if (wsdlDescription != NOT_FOUND) {
-            keys.add(WSDL_DESCRIPTION);
-        }
-        if (wsdlInterface != NOT_FOUND) {
-            keys.add(WSDL_INTERFACE);
-        }
-        if (wsdlOperation != NOT_FOUND) {
-            keys.add(WSDL_OPERATION);
-        }
-        if (wsdlPort != NOT_FOUND) {
-            keys.add(WSDL_PORT);
-        }
-        if (wsdlService != NOT_FOUND) {
-            keys.add(WSDL_SERVICE);
-        }
-        if (requestUrl != NOT_FOUND) {
-            keys.add(REQUEST_URL);
-        }
-        if (requestUri != NOT_FOUND) {
-            keys.add(REQUEST_URI);
-        }
-        if (pathInfo != NOT_FOUND) {
-            keys.add(PATH_INFO);
-        }
-        if (basePath != NOT_FOUND) {
-            keys.add(BASE_PATH);
-        }
-        if (fixedParamOrder != NOT_FOUND) {
-            keys.add(FIXED_PARAMETER_ORDER);
-        }
-        if (inInterceptors != NOT_FOUND) {
-            keys.add(IN_INTERCEPTORS);
-        }
-        if (outInterceptors != NOT_FOUND) {
-            keys.add(OUT_INTERCEPTORS);
-        }
-        if (responseCode != NOT_FOUND) {
-            keys.add(RESPONSE_CODE);
-        }
-        if (attachments != NOT_FOUND) {
-            keys.add(ATTACHMENTS);
-        }
-        if (encoding != NOT_FOUND) {
-            keys.add(ENCODING);
-        }
-        if (httpContext != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.HTTP_CONTEXT);
-        }
-        if (httpConfig != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.HTTP_CONFIG);
-        }
-        if (httpContextMatchStrategy != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY);
-        }
-        if (httpBasePath != NOT_FOUND) {
-            keys.add(HTTP_BASE_PATH);
-        }
-        if (asyncPostDispatch != NOT_FOUND) {
-            keys.add(ASYNC_POST_RESPONSE_DISPATCH);
-        }
-        if (securityContext != NOT_FOUND) {
-            keys.add(SECURITY_CONTEXT);
-        }
-        if (authorizationPolicy != NOT_FOUND) {
-            keys.add(AUTHORIZATION_POLICY);
-        }
-        if (certConstraints != NOT_FOUND) {
-            keys.add(CERT_CONSTRAINTS);
-        }
-        if (serviceRedirection != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.SERVICE_REDIRECTION);
-        }
-        if (httpServletResponse != NOT_FOUND) {
-            keys.add(HTTP_SERVLET_RESPONSE);
-        }
-        if (resourceMethod != NOT_FOUND) {
-            keys.add(RESOURCE_METHOD);
-        }
-        if (oneWayRequest != NOT_FOUND) {
-            keys.add(ONE_WAY_REQUEST);
-        }
-        if (asyncResponse != NOT_FOUND) {
-            keys.add(ASYNC_RESPONSE);
-        }
-        if (threadContextSwitched != NOT_FOUND) {
-            keys.add(THREAD_CONTEXT_SWITCHED);
-        }
-        if (cacheInputProperty != NOT_FOUND) {
-            keys.add(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY);
-        }
-        if (previousMessage != NOT_FOUND) {
-            keys.add(PhaseInterceptorChain.PREVIOUS_MESSAGE);
-        }
-        if (responseHeadersCopied != NOT_FOUND) {
-            keys.add(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED);
-        }
-        if (sseEventSink != NOT_FOUND) {
-            keys.add(SSE_EVENT_SINK);
-        }
-        if (requestorRole != NOT_FOUND) {
-            keys.add(REQUESTOR_ROLE);
-        }
-        if (partialResponse != NOT_FOUND) {
-            keys.add(PARTIAL_RESPONSE_MESSAGE);
-        }
-        if (emptyPartialResponse != NOT_FOUND) {
-            keys.add(EMPTY_PARTIAL_RESPONSE_MESSAGE);
-        }
-        if (endpointAddress != NOT_FOUND) {
-            keys.add(ENDPOINT_ADDRESS);
-        }
-        if (inboundMessage != NOT_FOUND) {
-            keys.add(INBOUND_MESSAGE);
+        Set<String> myKeys = new HashSet<String>(super.keySet());
+        for (int i = 0; i < TOTAL; i++) {
+            if (propertyValues[i] != NOT_FOUND) {
+                myKeys.add(propertyNames[i]);
+            }
         }
 
-        return keys;
+        return myKeys;
     }
     
     @Override
     public Set<Map.Entry<String,Object>> entrySet() {
-        Set<Map.Entry<String,Object>> entrySet = super.entrySet();
-        HashSet<Map.Entry<String,Object>> myEntrySet = new HashSet<Map.Entry<String,Object>>();
-        myEntrySet.addAll(entrySet);
-        Map.Entry<String,Object> entry;
-        if (protoHeaders != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(PROTOCOL_HEADERS, protoHeaders);
-            myEntrySet.add(entry);
-        } 
-        if (contentType != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(CONTENT_TYPE, contentType);
-            myEntrySet.add(entry);
-        }
-        if (queryString != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(QUERY_STRING, queryString);
-            myEntrySet.add(entry);
-        }
-        if (httpRequest != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.HTTP_REQUEST, httpRequest);
-            myEntrySet.add(entry);
-        }
-        if (httpResponse != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.HTTP_RESPONSE, httpResponse);
-            myEntrySet.add(entry);
-        }
-        if (pathToMatchSlash != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(REQUEST_PATH_TO_MATCH_SLASH, pathToMatchSlash);
-            myEntrySet.add(entry);
-        }
-        if (httpRequestMethod != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(HTTP_REQUEST_METHOD, httpRequestMethod);
-            myEntrySet.add(entry);
-        }
-        if (interceptorProviders != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(INTERCEPTOR_PROVIDERS, interceptorProviders);
-            myEntrySet.add(entry);
-        }
-        if (templateParameters != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(TEMPLATE_PARAMETERS, templateParameters);
-            myEntrySet.add(entry);
-        }
-        if (accept != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ACCEPT_CONTENT_TYPE, accept);
-            myEntrySet.add(entry);
-        }
-        if (continuationProvider != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(CONTINUATION_PROVIDER, continuationProvider);
-            myEntrySet.add(entry);
-        }
-        if (opStack != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(OP_RES_INFO_STACK, opStack);
-            myEntrySet.add(entry);
-        }
-        if (destination != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(DESTINATION, destination);
-            myEntrySet.add(entry);
-        }
-        if (wsdlDescription != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(WSDL_DESCRIPTION, wsdlDescription);
-            myEntrySet.add(entry);
-        }
-        if (wsdlInterface != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(WSDL_INTERFACE, wsdlInterface);
-            myEntrySet.add(entry);
-        }
-        if (wsdlOperation != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(WSDL_OPERATION, wsdlOperation);
-            myEntrySet.add(entry);
-        }
-        if (wsdlPort != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(WSDL_PORT, wsdlPort);
-            myEntrySet.add(entry);
-        }
-        if (wsdlService != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(WSDL_SERVICE, wsdlService);
-            myEntrySet.add(entry);
-        }
-        if (requestUrl != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(REQUEST_URL, requestUrl);
-            myEntrySet.add(entry);
-        }
-        if (requestUri != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(REQUEST_URI, requestUri);
-            myEntrySet.add(entry);
-        }
-        if (pathInfo != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(PATH_INFO, pathInfo);
-            myEntrySet.add(entry);
-        }
-        if (basePath != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(BASE_PATH, basePath);
-            myEntrySet.add(entry);
-        }
-        if (fixedParamOrder != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(FIXED_PARAMETER_ORDER, fixedParamOrder);
-            myEntrySet.add(entry);
-        }
-        if (inInterceptors != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(IN_INTERCEPTORS, inInterceptors);
-            myEntrySet.add(entry);
-        }
-        if (outInterceptors != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(OUT_INTERCEPTORS, outInterceptors);
-            myEntrySet.add(entry);
-        }
-        if (responseCode != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(RESPONSE_CODE, responseCode);
-            myEntrySet.add(entry);
-        }
-        if (attachments != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ATTACHMENTS, attachments);
-            myEntrySet.add(entry);
-        }
-        if (encoding != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ENCODING, encoding);
-            myEntrySet.add(entry);
-        }
-        if (httpContext != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.HTTP_CONTEXT, httpContext);
-            myEntrySet.add(entry);
-        }
-        if (httpConfig != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.HTTP_CONFIG, httpConfig);
-            myEntrySet.add(entry);
-        }
-        if (httpContextMatchStrategy != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY, httpContextMatchStrategy);
-            myEntrySet.add(entry);
-        }
-        if (httpBasePath != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(HTTP_BASE_PATH, httpBasePath);
-            myEntrySet.add(entry);
-        }
-        if (asyncPostDispatch != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ASYNC_POST_RESPONSE_DISPATCH, asyncPostDispatch);
-            myEntrySet.add(entry);
-        }
-        if (securityContext != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(SECURITY_CONTEXT, securityContext);
-            myEntrySet.add(entry);
-        }
-        if (authorizationPolicy != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AUTHORIZATION_POLICY, authorizationPolicy);
-            myEntrySet.add(entry);
-        }
-        if (certConstraints != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(CERT_CONSTRAINTS, certConstraints);
-            myEntrySet.add(entry);
-        }
-        if (serviceRedirection != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.SERVICE_REDIRECTION, serviceRedirection);
-            myEntrySet.add(entry);
-        }
-        if (httpServletResponse != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(HTTP_SERVLET_RESPONSE, httpServletResponse);
-            myEntrySet.add(entry);
-        }
-        if (resourceMethod != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(RESOURCE_METHOD, resourceMethod);
-            myEntrySet.add(entry);
-        }
-        if (oneWayRequest != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ONE_WAY_REQUEST, oneWayRequest);
-            myEntrySet.add(entry);
-        }
-        if (asyncResponse != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ASYNC_RESPONSE, asyncResponse);
-            myEntrySet.add(entry);
-        }
-        if (threadContextSwitched != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(THREAD_CONTEXT_SWITCHED, threadContextSwitched);
-            myEntrySet.add(entry);
-        }
-        if (cacheInputProperty != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY, cacheInputProperty);
-            myEntrySet.add(entry);
-        }
-        if (previousMessage != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(PhaseInterceptorChain.PREVIOUS_MESSAGE, previousMessage);
-            myEntrySet.add(entry);
-        }
-        if (responseHeadersCopied != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED, responseHeadersCopied);
-            myEntrySet.add(entry);
-        }
-        if (sseEventSink != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(SSE_EVENT_SINK, sseEventSink);
-            myEntrySet.add(entry);
-        }
-        if (requestorRole != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(REQUESTOR_ROLE, requestorRole);
-            myEntrySet.add(entry);
-        }
-        if (partialResponse != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(PARTIAL_RESPONSE_MESSAGE, partialResponse);
-            myEntrySet.add(entry);
-        }
-        if (emptyPartialResponse != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(EMPTY_PARTIAL_RESPONSE_MESSAGE, emptyPartialResponse);
-            myEntrySet.add(entry);
-        }
-        if (endpointAddress != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(ENDPOINT_ADDRESS, endpointAddress);
-            myEntrySet.add(entry);
-        }
-        if (inboundMessage != NOT_FOUND) {
-            entry = new AbstractMap.SimpleEntry<String,Object>(INBOUND_MESSAGE, inboundMessage);
-            myEntrySet.add(entry);
+        HashSet<Map.Entry<String,Object>> myEntrySet = new HashSet<Map.Entry<String,Object>>(super.entrySet());
+        for (int i = 0; i < TOTAL; i++) {
+            if (propertyValues[i] != NOT_FOUND) {
+                myEntrySet.add(new AbstractMap.SimpleEntry<String,Object>(propertyNames[i], propertyValues[i]));
+            }
         }
         return myEntrySet;
     }
     
     @Override
     public boolean containsKey(Object key) {
-        if (KEYS.contains(key)) {
-            if (key == PROTOCOL_HEADERS) {
-                return protoHeaders != NOT_FOUND;
-            } else if (key == CONTENT_TYPE) {
-                return contentType != NOT_FOUND;
-            } else if (key == QUERY_STRING) {
-                return queryString != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                return httpRequest != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                return httpResponse != NOT_FOUND;
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                return pathToMatchSlash != NOT_FOUND;
-            } else if (key == HTTP_REQUEST_METHOD) {
-                return contentType != NOT_FOUND;
-            } else if (key == QUERY_STRING) {
-                return queryString != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_REQUEST) {
-                return httpRequest != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_RESPONSE) {
-                return httpResponse != NOT_FOUND;
-            } else if (key == REQUEST_PATH_TO_MATCH_SLASH) {
-                return pathToMatchSlash != NOT_FOUND;
-            } else if (key == HTTP_REQUEST_METHOD) {
-                return httpRequestMethod != NOT_FOUND;
-            } else if (key == INTERCEPTOR_PROVIDERS) {
-                return interceptorProviders != NOT_FOUND;
-            } else if (key == TEMPLATE_PARAMETERS) {
-                return templateParameters != NOT_FOUND;
-            } else if (key == ACCEPT_CONTENT_TYPE) {
-                return accept != NOT_FOUND;
-            } else if (key == CONTINUATION_PROVIDER) {
-                return continuationProvider != NOT_FOUND;
-            } else if (key == OP_RES_INFO_STACK) {
-                return opStack != NOT_FOUND;
-            } else if (key == DESTINATION) {
-                return destination != NOT_FOUND;
-            } else if (key == WSDL_DESCRIPTION) {
-                return wsdlDescription != NOT_FOUND;
-            } else if (key == WSDL_INTERFACE) {
-                return wsdlInterface != NOT_FOUND;
-            } else if (key == WSDL_OPERATION) {
-                return wsdlOperation != NOT_FOUND;
-            } else if (key == WSDL_PORT) {
-                return wsdlPort != NOT_FOUND;
-            } else if (key == WSDL_SERVICE) {
-                return wsdlService != NOT_FOUND;
-            } else if (key == REQUEST_URL) {
-                return requestUrl != NOT_FOUND;
-            } else if (key == REQUEST_URI) {
-                return requestUri != NOT_FOUND;
-            } else if (key == PATH_INFO) {
-                return pathInfo != NOT_FOUND;
-            } else if (key == BASE_PATH) {
-                return basePath != NOT_FOUND;
-            } else if (key == FIXED_PARAMETER_ORDER) {
-                return fixedParamOrder != NOT_FOUND;
-            } else if (key == IN_INTERCEPTORS) {
-                return inInterceptors != NOT_FOUND;
-            } else if (key == OUT_INTERCEPTORS) {
-                return outInterceptors != NOT_FOUND;
-            } else if (key == RESPONSE_CODE) {
-                return responseCode != NOT_FOUND;
-            } else if (key == ATTACHMENTS) {
-                return attachments != NOT_FOUND;
-            } else if (key == ENCODING) {
-                return encoding != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT) {
-                return httpContext != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONFIG) {
-                return httpConfig != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY) {
-                return httpContextMatchStrategy != NOT_FOUND;
-            } else if (key == HTTP_BASE_PATH) {
-                return httpBasePath != NOT_FOUND;
-            } else if (key == ASYNC_POST_RESPONSE_DISPATCH) {
-                return asyncPostDispatch != NOT_FOUND;
-            } else if (key == SECURITY_CONTEXT) {
-                return securityContext != NOT_FOUND;
-            } else if (key == AUTHORIZATION_POLICY) {
-                return authorizationPolicy != NOT_FOUND;
-            } else if (key == CERT_CONSTRAINTS) {
-                return certConstraints != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.SERVICE_REDIRECTION) {
-                return serviceRedirection != NOT_FOUND;
-            } else if (key == HTTP_SERVLET_RESPONSE) {
-                return httpServletResponse != NOT_FOUND;
-            } else if (key == RESOURCE_METHOD) {
-                return resourceMethod != NOT_FOUND;
-            } else if (key == ONE_WAY_REQUEST) {
-                return oneWayRequest != NOT_FOUND;
-            } else if (key == ASYNC_RESPONSE) {
-                return asyncResponse != NOT_FOUND;
-            } else if (key == THREAD_CONTEXT_SWITCHED) {
-                return threadContextSwitched != NOT_FOUND;
-            } else if (key == OutgoingChainInterceptor.CACHE_INPUT_PROPERTY) {
-                return cacheInputProperty != NOT_FOUND;
-            } else if (key == PhaseInterceptorChain.PREVIOUS_MESSAGE) {
-                return previousMessage != NOT_FOUND;
-            } else if (key == AbstractHTTPDestination.RESPONSE_HEADERS_COPIED) {
-                return responseHeadersCopied != NOT_FOUND;
-            } else if (key == SSE_EVENT_SINK) {
-                return sseEventSink != NOT_FOUND;
-            } else if (key == REQUESTOR_ROLE) {
-                return requestorRole != NOT_FOUND;
-            } else if (key == PARTIAL_RESPONSE_MESSAGE) {
-                return partialResponse != NOT_FOUND;
-            } else if (key == EMPTY_PARTIAL_RESPONSE_MESSAGE) {
-                return emptyPartialResponse != NOT_FOUND;
-            } else if (key == ENDPOINT_ADDRESS) {
-                return endpointAddress != NOT_FOUND;
-            } else if (key == INBOUND_MESSAGE) {
-                return inboundMessage != NOT_FOUND;
-            }
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            return propertyValues[index] != NOT_FOUND;
         }
         return super.containsKey(key);
     }
     @Override
     public void putAll(Map<? extends String, ? extends Object> m) {
-        if (m.containsKey(PROTOCOL_HEADERS)) {
-            protoHeaders = m.get(PROTOCOL_HEADERS);
+        for (Map.Entry<? extends String, ? extends Object> entry : m.entrySet()) {
+            put(entry.getKey(), entry.getValue());
         }
-        if (m.containsKey(CONTENT_TYPE)) {
-            contentType = m.get(CONTENT_TYPE);
-        }
-        if (m.containsKey(QUERY_STRING)) {
-            queryString = m.get(QUERY_STRING);
-        }
-        if (m.containsKey(AbstractHTTPDestination.HTTP_REQUEST)) {
-            httpRequest = m.get(AbstractHTTPDestination.HTTP_REQUEST);
-        }
-        if (m.containsKey(AbstractHTTPDestination.HTTP_RESPONSE)) {
-            httpResponse = m.get(AbstractHTTPDestination.HTTP_RESPONSE);
-        }
-        if (m.containsKey(REQUEST_PATH_TO_MATCH_SLASH)) {
-            pathToMatchSlash = m.get(REQUEST_PATH_TO_MATCH_SLASH);
-        }
-        if (m.containsKey(HTTP_REQUEST_METHOD)) {
-            httpRequestMethod = m.get(HTTP_REQUEST_METHOD);
-        }
-        if (m.containsKey(INTERCEPTOR_PROVIDERS)) {
-            interceptorProviders = m.get(INTERCEPTOR_PROVIDERS);
-        }
-        if (m.containsKey(TEMPLATE_PARAMETERS)) {
-            templateParameters = m.get(TEMPLATE_PARAMETERS);
-        }
-        if (m.containsKey(ACCEPT_CONTENT_TYPE)) {
-            accept = m.get(ACCEPT_CONTENT_TYPE);
-        }
-        if (m.containsKey(CONTINUATION_PROVIDER)) {
-            continuationProvider = m.get(CONTINUATION_PROVIDER);
-        }
-        if (m.containsKey(OP_RES_INFO_STACK)) {
-            opStack = m.get(OP_RES_INFO_STACK);
-        }
-        if (m.containsKey(DESTINATION)) {
-            destination = m.get(DESTINATION);
-        }
-        if (m.containsKey(WSDL_DESCRIPTION)) {
-            wsdlDescription = m.get(WSDL_DESCRIPTION);
-        }
-        if (m.containsKey(WSDL_INTERFACE)) {
-            wsdlInterface = m.get(WSDL_INTERFACE);
-        }
-        if (m.containsKey(WSDL_OPERATION)) {
-            wsdlOperation = m.get(WSDL_OPERATION);
-        }
-        if (m.containsKey(WSDL_PORT)) {
-            wsdlPort = m.get(WSDL_PORT);
-        }
-        if (m.containsKey(WSDL_SERVICE)) {
-            wsdlService = m.get(WSDL_SERVICE);
-        }
-        if (m.containsKey(REQUEST_URL)) {
-            requestUrl = m.get(REQUEST_URL);
-        }
-        if (m.containsKey(REQUEST_URI)) {
-            requestUri = m.get(REQUEST_URI);
-        }
-        if (m.containsKey(PATH_INFO)) {
-            pathInfo = m.get(PATH_INFO);
-        }
-        if (m.containsKey(BASE_PATH)) {
-            basePath = m.get(BASE_PATH);
-        }
-        if (m.containsKey(FIXED_PARAMETER_ORDER)) {
-            fixedParamOrder = m.get(FIXED_PARAMETER_ORDER);
-        }
-        if (m.containsKey(IN_INTERCEPTORS)) {
-            inInterceptors = m.get(IN_INTERCEPTORS);
-        }
-        if (m.containsKey(OUT_INTERCEPTORS)) {
-            outInterceptors = m.get(OUT_INTERCEPTORS);
-        }
-        if (m.containsKey(RESPONSE_CODE)) {
-            responseCode = m.get(RESPONSE_CODE);
-        }
-        if (m.containsKey(ATTACHMENTS)) {
-            attachments = m.get(ATTACHMENTS);
-        }
-        if (m.containsKey(ENCODING)) {
-            encoding = m.get(ENCODING);
-        }
-        if (m.containsKey(AbstractHTTPDestination.HTTP_CONTEXT)) {
-            httpContext = m.get(AbstractHTTPDestination.HTTP_CONTEXT);
-        }
-        if (m.containsKey(AbstractHTTPDestination.HTTP_CONFIG)) {
-            httpConfig = m.get(AbstractHTTPDestination.HTTP_CONFIG);
-        }
-        if (m.containsKey(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY)) {
-            httpContextMatchStrategy = m.get(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY);
-        }
-        if (m.containsKey(HTTP_BASE_PATH)) {
-            httpBasePath = m.get(HTTP_BASE_PATH);
-        } 
-        if (m.containsKey(ASYNC_POST_RESPONSE_DISPATCH)) {
-            asyncPostDispatch = m.get(ASYNC_POST_RESPONSE_DISPATCH);
-        }
-        if (m.containsKey(SECURITY_CONTEXT)) {
-            securityContext = m.get(SECURITY_CONTEXT);
-        }
-        if (m.containsKey(AUTHORIZATION_POLICY)) {
-            authorizationPolicy = m.get(AUTHORIZATION_POLICY);
-        }
-        if (m.containsKey(CERT_CONSTRAINTS)) {
-            certConstraints = m.get(CERT_CONSTRAINTS);
-        }
-        if (m.containsKey(AbstractHTTPDestination.SERVICE_REDIRECTION)) {
-            serviceRedirection = m.get(AbstractHTTPDestination.SERVICE_REDIRECTION);
-        }
-        if (m.containsKey(HTTP_SERVLET_RESPONSE)) {
-            httpServletResponse = m.get(HTTP_SERVLET_RESPONSE);
-        }
-        if (m.containsKey(RESOURCE_METHOD)) {
-            resourceMethod = m.get(RESOURCE_METHOD);
-        }
-        if (m.containsKey(ONE_WAY_REQUEST)) {
-            oneWayRequest = m.get(ONE_WAY_REQUEST);
-        }
-        if (m.containsKey(ASYNC_RESPONSE)) {
-            asyncResponse = m.get(ASYNC_RESPONSE);
-        }
-        if (m.containsKey(THREAD_CONTEXT_SWITCHED)) {
-            threadContextSwitched = m.get(THREAD_CONTEXT_SWITCHED);
-        }
-        if (m.containsKey(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY)) {
-            cacheInputProperty = m.get(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY);
-        }
-        if (m.containsKey(PhaseInterceptorChain.PREVIOUS_MESSAGE)) {
-            previousMessage = m.get(PhaseInterceptorChain.PREVIOUS_MESSAGE);
-        }
-        if (m.containsKey(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED)) {
-            responseHeadersCopied = m.get(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED);
-        }
-        if (m.containsKey(SSE_EVENT_SINK)) {
-            sseEventSink = m.get(SSE_EVENT_SINK);
-        }
-        if (m.containsKey(REQUESTOR_ROLE)) {
-            requestorRole = m.get(REQUESTOR_ROLE);
-        }
-        if (m.containsKey(PARTIAL_RESPONSE_MESSAGE)) {
-            partialResponse = m.get(PARTIAL_RESPONSE_MESSAGE);
-        }
-        if (m.containsKey(EMPTY_PARTIAL_RESPONSE_MESSAGE)) {
-            emptyPartialResponse = m.get(EMPTY_PARTIAL_RESPONSE_MESSAGE);
-        }
-        if (m.containsKey(ENDPOINT_ADDRESS)) {
-            endpointAddress = m.get(ENDPOINT_ADDRESS);
-        }
-        if (m.containsKey(INBOUND_MESSAGE)) {
-            inboundMessage = m.get(INBOUND_MESSAGE);
-        }
-        super.putAll(m);
     }
     @Override
     public Collection<Object> values() {
-        Collection<Object> values = super.values();
-        if (protoHeaders != NOT_FOUND) {
-            values.add(protoHeaders);
-        } 
-        if (contentType != NOT_FOUND) {
-            values.add(contentType);
+        Collection<Object> myValues = new ArrayList<Object>(super.values());
+        for (Object o : propertyValues) {
+            if (o != NOT_FOUND) {
+                myValues.add(o);
+            }
         }
-        if (queryString != NOT_FOUND) {
-            values.add(queryString);
-        }
-        if (httpRequest != NOT_FOUND) {
-            values.add(httpRequest);
-        }
-        if (httpResponse != NOT_FOUND) {
-            values.add(httpResponse);
-        }
-        if (pathToMatchSlash != NOT_FOUND) {
-            values.add(pathToMatchSlash);
-        }
-        if (httpRequestMethod != NOT_FOUND) {
-            values.add(httpRequestMethod);
-        }
-        if (interceptorProviders != NOT_FOUND) {
-            values.add(interceptorProviders);
-        }
-        if (templateParameters != NOT_FOUND) {
-            values.add(templateParameters);
-        }
-        if (accept != NOT_FOUND) {
-            values.add(accept);
-        }
-        if (continuationProvider != NOT_FOUND) {
-            values.add(continuationProvider);
-        }
-        if (opStack != NOT_FOUND) {
-            values.add(opStack);
-        }
-        if (destination != NOT_FOUND) {
-            values.add(destination);
-        }
-        if (wsdlDescription != NOT_FOUND) {
-            values.add(wsdlDescription);
-        }
-        if (wsdlInterface != NOT_FOUND) {
-            values.add(wsdlInterface);
-        }
-        if (wsdlOperation != NOT_FOUND) {
-            values.add(wsdlOperation);
-        }
-        if (wsdlPort != NOT_FOUND) {
-            values.add(wsdlPort);
-        }
-        if (wsdlService != NOT_FOUND) {
-            values.add(wsdlService);
-        }
-        if (requestUrl != NOT_FOUND) {
-            values.add(requestUrl);
-        }
-        if (requestUri != NOT_FOUND) {
-            values.add(requestUri);
-        }
-        if (pathInfo != NOT_FOUND) {
-            values.add(pathInfo);
-        }
-        if (basePath != NOT_FOUND) {
-            values.add(basePath);
-        }
-        if (fixedParamOrder != NOT_FOUND) {
-            values.add(fixedParamOrder);
-        }
-        if (inInterceptors != NOT_FOUND) {
-            values.add(inInterceptors);
-        }
-        if (outInterceptors != NOT_FOUND) {
-            values.add(outInterceptors);
-        }
-        if (responseCode != NOT_FOUND) {
-            values.add(responseCode);
-        }
-        if (attachments != NOT_FOUND) {
-            values.add(attachments);
-        }
-        if (encoding != NOT_FOUND) {
-            values.add(encoding);
-        }
-        if (httpContext != NOT_FOUND) {
-            values.add(httpContext);
-        }
-        if (httpConfig != NOT_FOUND) {
-            values.add(httpConfig);
-        }
-        if (httpContextMatchStrategy != NOT_FOUND) {
-            values.add(httpContextMatchStrategy);
-        }
-        if (httpBasePath != NOT_FOUND) {
-            values.add(httpBasePath);
-        }
-        if (asyncPostDispatch != NOT_FOUND) {
-            values.add(asyncPostDispatch);
-        }
-        if (securityContext != NOT_FOUND) {
-            values.add(securityContext);
-        }
-        if (authorizationPolicy != NOT_FOUND) {
-            values.add(authorizationPolicy);
-        }
-        if (certConstraints != NOT_FOUND) {
-            values.add(certConstraints);
-        }
-        if (serviceRedirection != NOT_FOUND) {
-            values.add(serviceRedirection);
-        }
-        if (httpServletResponse != NOT_FOUND) {
-            values.add(httpServletResponse);
-        }
-        if (resourceMethod != NOT_FOUND) {
-            values.add(resourceMethod);
-        }
-        if (oneWayRequest != NOT_FOUND) {
-            values.add(oneWayRequest);
-        }
-        if (asyncResponse != NOT_FOUND) {
-            values.add(asyncResponse);
-        }
-        if (threadContextSwitched != NOT_FOUND) {
-            values.add(threadContextSwitched);
-        }
-        if (cacheInputProperty != NOT_FOUND) {
-            values.add(cacheInputProperty);
-        }
-        if (previousMessage != NOT_FOUND) {
-            values.add(previousMessage);
-        }
-        if (responseHeadersCopied != NOT_FOUND) {
-            values.add(responseHeadersCopied);
-        }
-        if (sseEventSink != NOT_FOUND) {
-            values.add(sseEventSink);
-        }
-        if (requestorRole != NOT_FOUND) {
-            values.add(requestorRole);
-        }
-        if (partialResponse != NOT_FOUND) {
-            values.add(partialResponse);
-        }
-        if (emptyPartialResponse != NOT_FOUND) {
-            values.add(emptyPartialResponse);
-        }
-        if (endpointAddress != NOT_FOUND) {
-            values.add(endpointAddress);
-        }
-        if (inboundMessage != NOT_FOUND) {
-            values.add(inboundMessage);
-        }
-        return values;
+        return myValues;
     }
 
     public Object getAuthorizationPolicy() {
-        return authorizationPolicy == NOT_FOUND ? null : authorizationPolicy;
+        return getFromPropertyArray(authorizationPolicy);
     }
 
-    public void setAuthorizationPolicy(Object authorizationPolicy) {
-        this.authorizationPolicy = authorizationPolicy;
+    public void setAuthorizationPolicy(Object a) {
+        propertyValues[authorizationPolicy] = a;
     }
 
     public Object getCertConstraints() {
-        return certConstraints == NOT_FOUND ? null : certConstraints;
+        return getFromPropertyArray(certConstraints);
     }
 
-    public void setCertConstraints(Object certConstraints) {
-        this.certConstraints = certConstraints;
+    public void setCertConstraints(Object c) {
+        propertyValues[certConstraints] = c;
     }
 
     public Object getServiceRedirection() {
-        return serviceRedirection == NOT_FOUND ? null : serviceRedirection;
+        return getFromPropertyArray(serviceRedirection);
     }
 
-    public void setServiceRedirection(Object serviceRedirection) {
-        this.serviceRedirection = serviceRedirection;
+    public void setServiceRedirection(Object s) {
+        propertyValues[serviceRedirection] = s;
     }
 
     public Object getHttpServletResponse() {
-        return httpServletResponse == NOT_FOUND ? null : httpServletResponse;
+        return getFromPropertyArray(httpServletResponse);
     }
 
-    public void setHttpServletResponse(Object httpServletResponse) {
-        this.httpServletResponse = httpServletResponse;
+    public void setHttpServletResponse(Object h) {
+        propertyValues[httpServletResponse] = h;
     }
 
     public Object getResourceMethod() {
-        return resourceMethod == NOT_FOUND ? null : resourceMethod;
+        return getFromPropertyArray(resourceMethod);
     }
 
-    public void setResourceMethod(Object resourceMethod) {
-        this.resourceMethod = resourceMethod;
+    public void setResourceMethod(Object r) {
+        propertyValues[resourceMethod] = r;
     }
 
     public Object getOneWayRequest() {
-        return oneWayRequest == NOT_FOUND ? null : oneWayRequest;
+        return getFromPropertyArray(oneWayRequest);
     }
 
-    public void setOneWayRequest(Object oneWayRequest) {
-        this.oneWayRequest = oneWayRequest;
+    public void setOneWayRequest(Object o) {
+        propertyValues[oneWayRequest] = o;
     }
 
     public Object getAsyncResponse() {
-        return asyncResponse == NOT_FOUND ? null : asyncResponse;
+        return getFromPropertyArray(asyncResponse);
     }
 
-    public void setAsyncResponse(Object asyncResponse) {
-        this.asyncResponse = asyncResponse;
+    public void setAsyncResponse(Object a) {
+        propertyValues[asyncResponse] = a;
     }
 
     public Object getThreadContextSwitched() {
-        return threadContextSwitched == NOT_FOUND ? null : threadContextSwitched;
+        return getFromPropertyArray(threadContextSwitched);
     }
 
-    public void setThreadContextSwitched(Object threadContextSwitched) {
-        this.threadContextSwitched = threadContextSwitched;
+    public void setThreadContextSwitched(Object t) {
+        propertyValues[threadContextSwitched] = t;
     }
 
     public Object getPreviousMessage() {
-        return previousMessage == NOT_FOUND ? null : previousMessage;
+        return getFromPropertyArray(previousMessage);
     }
 
     public boolean containsPreviousMessage() {
-        return previousMessage != NOT_FOUND;
+        return propertyValues[previousMessage] != NOT_FOUND;
     }
 
-    public void setPreviousMessage(Object previousMessage) {
-        this.previousMessage = previousMessage;
+    public void setPreviousMessage(Object p) {
+        propertyValues[previousMessage] = p;
     }
 
     public Object getCacheInputProperty() {
-        return cacheInputProperty == NOT_FOUND ? null : cacheInputProperty;
+        return getFromPropertyArray(cacheInputProperty);
     }
 
-    public void setCacheInputProperty(Object cacheInputProperty) {
-        this.cacheInputProperty = cacheInputProperty;
+    public void setCacheInputProperty(Object c) {
+        propertyValues[cacheInputProperty] = c;
     }
 
     public Object getSseEventSink() {
-        return sseEventSink == NOT_FOUND ? null : sseEventSink;
+        return getFromPropertyArray(sseEventSink);
     }
 
-    public void setSseEventSink(Object sseEventSink) {
-        this.sseEventSink = sseEventSink;
+    public void setSseEventSink(Object s) {
+        propertyValues[sseEventSink] = s;
     }
 
     public Object getResponseHeadersCopied() {
-        return responseHeadersCopied == NOT_FOUND ? null : responseHeadersCopied;
+        return getFromPropertyArray(responseHeadersCopied);
     }
 
-    public void setResponseHeadersCopied(Object responseHeadersCopied) {
-        this.responseHeadersCopied = responseHeadersCopied;
+    public void setResponseHeadersCopied(Object r) {
+        propertyValues[responseHeadersCopied] = r;
     }
 
     public Object getRequestorRole() {
-        return requestorRole == NOT_FOUND ? null : requestorRole;
+        return getFromPropertyArray(requestorRole);
     }
 
-    public void setRequestorRole(Object requestorRole) {
-        this.requestorRole = requestorRole;
+    public void setRequestorRole(Object r) {
+        propertyValues[requestorRole] = r;
     }
 
     public Object getEmptyPartialResponse() {
-        return emptyPartialResponse == NOT_FOUND ? null : emptyPartialResponse;
+        return getFromPropertyArray(emptyPartialResponse);
     }
 
-    public void setEmptyPartialResponse(Object emptyPartialResponse) {
-        this.emptyPartialResponse = emptyPartialResponse;
+    public void setEmptyPartialResponse(Object e) {
+        propertyValues[emptyPartialResponse] = e;
     }
 
     public Object getPartialResponse() {
-        return partialResponse == NOT_FOUND ? null : partialResponse;
+        return getFromPropertyArray(partialResponse);
     }
 
-    public void setPartialResponse(Object partialResponse) {
-        this.partialResponse = partialResponse;
+    public void setPartialResponse(Object p) {
+        propertyValues[partialResponse] = p;
     }
 
     public Object getEndpointAddress() {
-        return endpointAddress == NOT_FOUND ? null : endpointAddress;
+        return getFromPropertyArray(endpointAddress);
     }
 
-    public void setEndpointAddress(Object endpointAddress) {
-        this.endpointAddress = endpointAddress;
+    public void setEndpointAddress(Object e) {
+        propertyValues[endpointAddress] = e;
     }
     
     public Object getInboundMessage() {
-        return inboundMessage == NOT_FOUND ? null : inboundMessage;
+        return getFromPropertyArray(inboundMessage);
     }
 
-    public void setInboundMessage(Object inboundMessage) {
-        this.inboundMessage = inboundMessage;
+    public void setInboundMessage(Object i) {
+        propertyValues[inboundMessage] = i;
     }
     public String getPathToMatchSlash() {
-        return pathToMatchSlash == NOT_FOUND ? null : (String) pathToMatchSlash;
+        return (String) getFromPropertyArray(pathToMatchSlash);
     }
     
-    public void setPathToMatchSlash(String pathToMatchSlash) {
-        this.pathToMatchSlash = pathToMatchSlash;
+    public void setPathToMatchSlash(String p) {
+        propertyValues[pathToMatchSlash] = p;
     }
     
     public String getHttpRequestMethod() {
-        return httpRequestMethod == NOT_FOUND ? null : (String) httpRequestMethod;
+        return (String) getFromPropertyArray(httpRequestMethod);
     }
     
-    public void setHttpRequestMethod(String httpRequestMethod) {
-        this.httpRequestMethod = httpRequestMethod;
+    public void setHttpRequestMethod(String h) {
+        propertyValues[httpRequestMethod] = h;
     }
 
     public void removePathToMatchSlash() {
-        pathToMatchSlash = NOT_FOUND;
+        propertyValues[pathToMatchSlash] = NOT_FOUND;
     }
     public String getQueryString() {
-        return queryString == NOT_FOUND ? null : (String) queryString;
+        return (String) getFromPropertyArray(queryString);
     }
     
-    public void setQueryString(String queryString) {
-        this.queryString = queryString;
+    public void setQueryString(String q) {
+        propertyValues[queryString] = q;
     }
     public Object getOperationResourceInfoStack() {
-        return opStack == NOT_FOUND ? null: opStack;
+        return getFromPropertyArray(opStack);
     }
     
-    public void setOperationResourceInfoStack(Object opStack) {
-        this.opStack = opStack;
+    public void setOperationResourceInfoStack(Object o) {
+        propertyValues[opStack] = o;
     }
 
     public String getContentType() {
-        return contentType == NOT_FOUND ? null : (String) contentType;
+        return (String) getFromPropertyArray(contentType);
     }
     
     public boolean containsContentType() {
-        return contentType != NOT_FOUND;
+        return propertyValues[contentType] != NOT_FOUND;
     }
     
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
+    public void setContentType(String c) {
+        propertyValues[contentType] = c;
     }
 
     public Object getHttpRequest() {
-        return httpRequest == NOT_FOUND ? null : httpRequest;
+        return getFromPropertyArray(httpRequest);
     }
     
     public boolean containsHttpRequest() {
-        return httpRequest != NOT_FOUND;
+        return propertyValues[httpRequest] != NOT_FOUND;
     }
     
-    public void setHttpRequest(Object httpRequest) {
-        this.httpRequest = httpRequest;
+    public void setHttpRequest(Object h) {
+        propertyValues[httpRequest] = h;
     }
     
     public Object getHttpResponse() {
-        return httpResponse == NOT_FOUND ? null : httpResponse;
+        return getFromPropertyArray(httpResponse);
     }
     
-    public void setHttpResponse(Object httpResponse) {
-        this.httpResponse = httpResponse;
+    public void setHttpResponse(Object h) {
+        propertyValues[httpResponse] = h;
     }
 
     public Object getAccept() {
-        return accept == NOT_FOUND ? null : accept;
+        return getFromPropertyArray(accept);
     }
     
-    public void setAccept(Object accept) {
-        this.accept = accept;
+    public void setAccept(Object a) {
+        propertyValues[accept] = a;
     }
 
     public Object getContinuationProvider() {
-        return continuationProvider == NOT_FOUND ? null : continuationProvider;
+        return getFromPropertyArray(continuationProvider);
     }
     
-    public void setContinuationProvider(Object continuationProvider) {
-        this.continuationProvider = continuationProvider;
+    public void setContinuationProvider(Object c) {
+        propertyValues[continuationProvider] = c;
     }
 
     public Object getWsdlDescription() {
-        return wsdlDescription == NOT_FOUND ? null : wsdlDescription;
+        return getFromPropertyArray(wsdlDescription);
     }
     
-    public void setWsdlDescription(Object wsdlDescription) {
-        this.wsdlDescription = wsdlDescription;
+    public void setWsdlDescription(Object w) {
+        propertyValues[wsdlDescription] = w;
     }
 
     public Object getWsdlInterface() {
-        return wsdlInterface == NOT_FOUND ? null : wsdlInterface;
+        return getFromPropertyArray(wsdlInterface);
     }
     
-    public void setWsdlInterface(Object wsdlInterface) {
-        this.wsdlInterface = wsdlInterface;
+    public void setWsdlInterface(Object w) {
+        propertyValues[wsdlInterface] = w;
     }
 
     public Object getWsdlOperation() {
-        return wsdlOperation == NOT_FOUND ? null : wsdlOperation;
+        return getFromPropertyArray(wsdlOperation);
     }
     
-    public void setWsdlOperation(Object wsdlOperation) {
-        this.wsdlOperation = wsdlOperation;
+    public void setWsdlOperation(Object w) {
+        propertyValues[wsdlOperation] = w;
     }
 
     public Object getWsdlPort() {
-        return wsdlPort == NOT_FOUND ? null : wsdlPort;
+        return getFromPropertyArray(wsdlPort);
     }
     
-    public void setWsdlPort(Object wsdlPort) {
-        this.wsdlPort = wsdlPort;
+    public void setWsdlPort(Object w) {
+        propertyValues[wsdlPort] = w;
     }
 
     public Object getWsdlService() {
-        return wsdlService == NOT_FOUND ? null : wsdlService;
+        return getFromPropertyArray(wsdlService);
     }
     
-    public void setWsdlService(Object wsdlService) {
-        this.wsdlService = wsdlService;
+    public void setWsdlService(Object w) {
+        propertyValues[wsdlService] = w;
     }
 
     public Object getRequestUrl() {
-        return requestUrl == NOT_FOUND ? null : requestUrl;
+        return getFromPropertyArray(requestUrl);
     }
     
-    public void setRequestUrl(Object requestUrl) {
-        this.requestUrl = requestUrl;
+    public void setRequestUrl(Object r) {
+        propertyValues[requestUrl] = r;
     }
 
     public Object getRequestUri() {
-        return requestUri == NOT_FOUND ? null : requestUri;
+        return getFromPropertyArray(requestUri);
     }
     
-    public void setRequestUri(Object requestUri) {
-        this.requestUri = requestUri;
+    public void setRequestUri(Object r) {
+        propertyValues[requestUri] = r;
     }
     
     public Object getPathInfo() {
-        return pathInfo == NOT_FOUND ? null : pathInfo;
+        return getFromPropertyArray(pathInfo);
     }
     
-    public void setPathInfo(Object pathInfo) {
-        this.pathInfo = pathInfo;
+    public void setPathInfo(Object p) {
+       propertyValues[pathInfo] = p;
     }
     
     public Object getBasePath() {
-        return basePath == NOT_FOUND ? null : basePath;
+        return getFromPropertyArray(basePath);
     }
     
     public boolean containsBasePath() {
-        return basePath != NOT_FOUND;
+        return propertyValues[basePath] != NOT_FOUND;
     }
     
-    public void setBasePath(Object basePath) {
-        this.basePath = basePath;
+    public void setBasePath(Object b) {
+        propertyValues[basePath] = b;
     }
 
     public Object getFixedParamOrder() {
-        return fixedParamOrder == NOT_FOUND ? null : fixedParamOrder;
+        return getFromPropertyArray(fixedParamOrder);
     }
     
-    public void setFixedParamOrder(Object fixedParamOrder) {
-        this.fixedParamOrder = fixedParamOrder;
+    public void setFixedParamOrder(Object f) {
+        propertyValues[fixedParamOrder] = f;
     }
 
     public Object getInInterceptors() {
-        return inInterceptors == NOT_FOUND ? null : inInterceptors;
+        return getFromPropertyArray(inInterceptors);
     }
     
-    public void setInInterceptors(Object inInterceptors) {
-        this.inInterceptors = inInterceptors;
+    public void setInInterceptors(Object i) {
+        propertyValues[inInterceptors] = i;
     }
 
     public Object getOutInterceptors() {
-        return outInterceptors == NOT_FOUND ? null : outInterceptors;
+        return getFromPropertyArray(outInterceptors);
     }
     
-    public void setOutInterceptors(Object outInterceptors) {
-        this.outInterceptors = outInterceptors;
+    public void setOutInterceptors(Object o) {
+        propertyValues[outInterceptors] = o;
     }
 
     public Object getResponseCode() {
-        return responseCode == NOT_FOUND ? null : responseCode;
+        return getFromPropertyArray(responseCode);
     }
     
-    public void setResponseCode(Object responseCode) {
-        this.responseCode = responseCode;
+    public void setResponseCode(Object r) {
+        propertyValues[responseCode] = r;
     }
 
     public Object getEncoding() {
-        return encoding == NOT_FOUND ? null : encoding;
+        return getFromPropertyArray(encoding);
     }
     
-    public void setEncoding(Object encoding) {
-        this.encoding = encoding;
+    public void setEncoding(Object e) {
+        propertyValues[encoding] = e;
     }
 
     public Object getHttpContext() {
-        return httpContext == NOT_FOUND ? null : httpContext;
+        return getFromPropertyArray(httpContext);
     }
     
-    public void setHttpContext(Object httpContext) {
-        this.httpContext = httpContext;
+    public void setHttpContext(Object h) {
+        propertyValues[httpContext] = h;
     }
 
     public Object getHttpConfig() {
-        return httpConfig == NOT_FOUND ? null : httpConfig;
+        return getFromPropertyArray(httpConfig);
     }
     
-    public void setHttpConfig(Object httpConfig) {
-        this.httpConfig = httpConfig;
+    public void setHttpConfig(Object h) {
+        propertyValues[httpConfig] = h;
     }
 
     public Object getHttpContextMatchStrategy() {
-        return httpContextMatchStrategy == NOT_FOUND ? null : httpContextMatchStrategy;
+        return getFromPropertyArray(httpContextMatchStrategy);
     }
     
-    public void setHttpContextMatchStrategy(Object httpContextMatchStrategy) {
-        this.httpContextMatchStrategy = httpContextMatchStrategy;
+    public void setHttpContextMatchStrategy(Object h) {
+        propertyValues[httpContextMatchStrategy] = h;
     }
 
     public Object getHttpBasePath() {
-        return httpBasePath == NOT_FOUND ? null : httpBasePath;
+        return getFromPropertyArray(httpBasePath);
     }
     
-    public void setHttpBasePath(Object httpBasePath) {
-        this.httpBasePath = httpBasePath;
+    public void setHttpBasePath(Object h) {
+        propertyValues[httpBasePath] = h;
     }
 
     public Object getAsyncPostDispatch() {
-        return asyncPostDispatch == NOT_FOUND ? null : asyncPostDispatch;
+        return getFromPropertyArray(asyncPostDispatch);
     }
     
-    public void setAsyncPostDispatch(Object asyncPostDispatch) {
-        this.asyncPostDispatch = asyncPostDispatch;
+    public void setAsyncPostDispatch(Object a) {
+        propertyValues[asyncPostDispatch] = a;
     }
     
     public Object getSecurityContext() {
-        return securityContext == NOT_FOUND ? null : securityContext;
+        return getFromPropertyArray(securityContext);
     }
     
-    public void setSecurityContext(Object securityContext) {
-        this.securityContext = securityContext;
+    public void setSecurityContext(Object s) {
+        propertyValues[securityContext] = s;
     }
 
     @SuppressWarnings("rawtypes")
     public Collection getInterceptorProviders() {
-        return interceptorProviders == NOT_FOUND ? null : (Collection) interceptorProviders;
+        return (Collection) getFromPropertyArray(interceptorProviders);
     }
     
     @SuppressWarnings("rawtypes")
-    public void setInterceptorProviders(Collection interceptorProviders) {
-        this.interceptorProviders = interceptorProviders;
+    public void setInterceptorProviders(Collection i) {
+        propertyValues[interceptorProviders] = i;
     }
 
     public Object getTemplateParameters() {
-        return templateParameters == NOT_FOUND ? null :  templateParameters;
+        return getFromPropertyArray(templateParameters);
     }
     
-    public void setTemplateParameters(Object templateParameters) {
-        this.templateParameters = templateParameters;
+    public void setTemplateParameters(Object t) {
+        propertyValues[templateParameters] = t;
     }
 
     public void removeContentType() {
-        contentType = NOT_FOUND;
+        propertyValues[contentType] = NOT_FOUND;
     }
     public void removeHttpResponse() {
-        httpResponse = NOT_FOUND;
+        propertyValues[httpResponse] = NOT_FOUND;
     }
     public void removeHttpRequest() {
-        httpRequest = NOT_FOUND;
+        propertyValues[httpRequest] = NOT_FOUND;
+    }
+    
+    private Object getFromPropertyArray(int index) {
+        Object value = propertyValues[index];
+        return value == NOT_FOUND ? null : value;
+    }
+    
+    @Override
+    public int size() {
+        int size = super.size();
+        for (Object o : propertyValues) {
+            if (o != NOT_FOUND) {
+                size++;
+            }
+        }
+        return size;
+    }
+    
+    @Override
+    public void clear() {
+        super.clear();
+        for (int i = 0; i < TOTAL; i++) {
+            propertyValues[i] = NOT_FOUND;
+        }
+    }
+    
+    @Override
+    public boolean isEmpty() {
+        if (!super.isEmpty()) {
+            return false;
+        }
+        
+        for (Object o : propertyValues) {
+            if (o != NOT_FOUND) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    @Override
+    public boolean containsValue(Object value) {
+        if (super.containsValue(value)) {
+            return true;
+        }
+        
+        for (Object o : propertyValues) {
+            if (o.equals(value)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    @Override
+    public Object getOrDefault(Object key, Object d) {
+        return getOrDefault((String) key, d);
+    }
+    
+    public Object getOrDefault(String key, Object d) {
+        Object v = super.getOrDefault(key, NOT_FOUND);
+        if (v != NOT_FOUND) {
+            return v;
+        }
+        for (int i = 0; i < TOTAL; i++) {
+            if (propertyNames[i] == key) {
+                if (propertyValues[i] != NOT_FOUND) {
+                    return propertyValues[i];
+                } else {
+                    return d;
+                }
+            }
+        }
+        return d;
+    }
+    
+    @Override
+    public void forEach(BiConsumer<? super String, ? super Object> action) {
+        super.forEach(action);
+        for (int i = 0; i < TOTAL; i++) {
+            if (propertyValues[i] != NOT_FOUND) {
+                action.accept(propertyNames[i], propertyValues[i]);
+            }
+        }
+    }
+    @Override
+    public void replaceAll(BiFunction<? super String, ? super Object, ? extends Object> function) {
+        super.replaceAll(function);
+        for (int i = 0; i < TOTAL; i++) {
+            if (propertyValues[i] != NOT_FOUND) {
+                propertyValues[i] = function.apply(propertyNames[i], propertyValues[i]);
+            }
+        }
+    }
+    @Override
+    public Object replace(String key, Object value) {
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] != NOT_FOUND) {
+                Object ret = propertyValues[index];
+                propertyValues[index] = value;
+                return ret;
+            } else {
+                return null;
+            }
+        }
+
+        return super.replace(key, value);
+    }
+    @Override
+    public boolean replace(String key, Object oldValue, Object newValue) {
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] == oldValue) {
+                propertyValues[index] = newValue;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return super.replace(key, oldValue, newValue);
+    }
+    @Override
+    public Object putIfAbsent(String key, Object value) {
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] == NOT_FOUND) {
+                propertyValues[index] = value;
+                return null;
+            } else {
+                return propertyValues[index];
+            }
+        }
+        return super.putIfAbsent(key, value);
+    }
+    @Override
+    public boolean remove(Object key, Object value) {
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] == value) {
+                propertyValues[index] = NOT_FOUND;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return super.remove(key, value);
+    }
+    @Override
+    public Object compute(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public Object computeIfAbsent(String key, Function<? super String, ? extends Object> mappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public Object computeIfPresent(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public Object merge(String key, Object value, BiFunction<? super Object, ? super Object, ? extends Object> remappingFunction) {
+        throw new UnsupportedOperationException();
     }
     //Liberty code change end
 }

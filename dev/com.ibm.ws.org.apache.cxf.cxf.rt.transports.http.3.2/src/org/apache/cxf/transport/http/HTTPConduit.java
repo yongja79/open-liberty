@@ -1691,11 +1691,11 @@ public abstract class HTTPConduit
             InputStream in = null;
             // oneway or decoupled twoway calls may expect HTTP 202 with no content
 
-            Message inMessage = new MessageImpl();
+            //Liberty code change start
+            MessageImpl inMessage = new MessageImpl();
             inMessage.setExchange(exchange);
             updateResponseHeaders(inMessage);
-            //Liberty code change start
-            ((MessageImpl) inMessage).setResponseCode(responseCode);
+            inMessage.setResponseCode(responseCode);
             //Liberty code change end
             if (MessageUtils.getContextualBoolean(outMessage, SET_HTTP_RESPONSE_MESSAGE, false)) {
                 inMessage.put(HTTP_RESPONSE_MESSAGE, getResponseMessage());
