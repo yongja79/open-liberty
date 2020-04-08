@@ -59,19 +59,19 @@ public class MessageImpl extends StringMapImpl implements Message {
     private int index;
 
     //Liberty code change start
-    private static int protoHeaders = 0;
-    private static int opStack = 1;
-    private static int contentType = 2;
-    private static int destination = 3;
-    private static int queryString = 4;
-    private static int httpRequest = 5;
-    private static int httpResponse = 6;
-    private static int pathToMatchSlash = 7;
-    private static int httpRequestMethod = 8;
-    private static int interceptorProviders = 9;
-    private static int templateParameters = 10;
-    private static int accept = 11;
-    private static int continuationProvider = 12;
+    private static int contentType = 0;
+    private static int protoHeaders = 1;
+    private static int queryString = 2;
+    private static int httpRequest = 3;
+    private static int httpResponse = 4;
+    private static int pathToMatchSlash = 5;
+    private static int httpRequestMethod = 6;
+    private static int interceptorProviders = 7;
+    private static int templateParameters = 8;
+    private static int accept = 9;
+    private static int continuationProvider = 10;
+    private static int destination = 11;
+    private static int opStack = 12;
     private static int wsdlDescription = 13;
     private static int wsdlInterface = 14;
     private static int wsdlOperation = 15;
@@ -127,115 +127,26 @@ public class MessageImpl extends StringMapImpl implements Message {
     private static final String ASYNC_RESPONSE = "javax.ws.rs.container.AsyncResponse";
     private static final String SSE_EVENT_SINK = "javax.ws.rs.sse.SseEventSink";
     private static final Map<String, Integer> KEYMAP;
-    private static String[] propertyNames = new String[TOTAL];
+    private static final String[] propertyNames = { CONTENT_TYPE, PROTOCOL_HEADERS, QUERY_STRING, AbstractHTTPDestination.HTTP_REQUEST,
+                    AbstractHTTPDestination.HTTP_RESPONSE, REQUEST_PATH_TO_MATCH_SLASH, HTTP_REQUEST_METHOD, INTERCEPTOR_PROVIDERS,
+                    TEMPLATE_PARAMETERS, ACCEPT_CONTENT_TYPE, CONTINUATION_PROVIDER, DESTINATION, OP_RES_INFO_STACK, WSDL_DESCRIPTION,
+                    WSDL_INTERFACE, WSDL_OPERATION, WSDL_PORT, WSDL_SERVICE, REQUEST_URL, REQUEST_URI, PATH_INFO, BASE_PATH,
+                    FIXED_PARAMETER_ORDER, IN_INTERCEPTORS, OUT_INTERCEPTORS, RESPONSE_CODE, ATTACHMENTS, ENCODING,
+                    AbstractHTTPDestination.HTTP_CONTEXT, AbstractHTTPDestination.HTTP_CONFIG, AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY,
+                    HTTP_BASE_PATH, ASYNC_POST_RESPONSE_DISPATCH, SECURITY_CONTEXT, AUTHORIZATION_POLICY, CERT_CONSTRAINTS,
+                    AbstractHTTPDestination.SERVICE_REDIRECTION, HTTP_SERVLET_RESPONSE, RESOURCE_METHOD, ONE_WAY_REQUEST, ASYNC_RESPONSE,
+                    THREAD_CONTEXT_SWITCHED, OutgoingChainInterceptor.CACHE_INPUT_PROPERTY, PhaseInterceptorChain.PREVIOUS_MESSAGE,
+                    AbstractHTTPDestination.RESPONSE_HEADERS_COPIED, SSE_EVENT_SINK, REQUESTOR_ROLE, PARTIAL_RESPONSE_MESSAGE,
+                    EMPTY_PARTIAL_RESPONSE_MESSAGE, ENDPOINT_ADDRESS, INBOUND_MESSAGE };
 
     private static final Object NOT_FOUND = new Object();
     private static final Integer KEY_NOT_FOUND = Integer.valueOf(-1);
     
     static {
         Map<String, Integer> keymap = new HashMap<String, Integer>(TOTAL);
-        propertyNames[contentType] = CONTENT_TYPE;
-        keymap.put(CONTENT_TYPE, contentType);
-        propertyNames[protoHeaders] = PROTOCOL_HEADERS;
-        keymap.put(PROTOCOL_HEADERS, protoHeaders);
-        propertyNames[queryString] = QUERY_STRING;
-        keymap.put(QUERY_STRING, queryString);
-        propertyNames[httpRequest] = AbstractHTTPDestination.HTTP_REQUEST;
-        keymap.put(AbstractHTTPDestination.HTTP_REQUEST, httpRequest);
-        propertyNames[httpResponse] = AbstractHTTPDestination.HTTP_RESPONSE;
-        keymap.put(AbstractHTTPDestination.HTTP_RESPONSE, httpResponse);
-        propertyNames[pathToMatchSlash] = REQUEST_PATH_TO_MATCH_SLASH;
-        keymap.put(REQUEST_PATH_TO_MATCH_SLASH, pathToMatchSlash);
-        propertyNames[httpRequestMethod] = HTTP_REQUEST_METHOD;
-        keymap.put(HTTP_REQUEST_METHOD, httpRequestMethod);
-        propertyNames[interceptorProviders] = INTERCEPTOR_PROVIDERS;
-        keymap.put(INTERCEPTOR_PROVIDERS, interceptorProviders);
-        propertyNames[templateParameters] = TEMPLATE_PARAMETERS;
-        keymap.put(TEMPLATE_PARAMETERS, templateParameters);
-        propertyNames[accept] = ACCEPT_CONTENT_TYPE;
-        keymap.put(ACCEPT_CONTENT_TYPE, accept);
-        propertyNames[continuationProvider] = CONTINUATION_PROVIDER;
-        keymap.put(CONTINUATION_PROVIDER, continuationProvider);
-        propertyNames[destination] = DESTINATION;
-        keymap.put(DESTINATION, destination);
-        propertyNames[opStack] = OP_RES_INFO_STACK;
-        keymap.put(OP_RES_INFO_STACK, opStack);
-        propertyNames[wsdlDescription] = WSDL_DESCRIPTION;
-        keymap.put(WSDL_DESCRIPTION, wsdlDescription);
-        propertyNames[wsdlInterface] = WSDL_INTERFACE;
-        keymap.put(WSDL_INTERFACE, wsdlInterface);
-        propertyNames[wsdlOperation] = WSDL_OPERATION;
-        keymap.put(WSDL_OPERATION, wsdlOperation);
-        propertyNames[wsdlPort] = WSDL_PORT;
-        keymap.put(WSDL_PORT, wsdlPort);
-        propertyNames[wsdlService] = WSDL_SERVICE;
-        keymap.put(WSDL_SERVICE, wsdlService);
-        propertyNames[requestUrl] = REQUEST_URL;
-        keymap.put(REQUEST_URL, requestUrl);
-        propertyNames[requestUri] = REQUEST_URI;
-        keymap.put(REQUEST_URI, requestUri);
-        propertyNames[pathInfo] = PATH_INFO;
-        keymap.put(PATH_INFO, pathInfo);
-        propertyNames[basePath] = BASE_PATH;
-        keymap.put(BASE_PATH, basePath);
-        propertyNames[fixedParamOrder] = FIXED_PARAMETER_ORDER;
-        keymap.put(FIXED_PARAMETER_ORDER, fixedParamOrder);
-        propertyNames[inInterceptors] = IN_INTERCEPTORS;
-        keymap.put(IN_INTERCEPTORS, inInterceptors);
-        propertyNames[outInterceptors] = OUT_INTERCEPTORS;
-        keymap.put(OUT_INTERCEPTORS, outInterceptors);
-        propertyNames[responseCode] = RESPONSE_CODE;
-        keymap.put(RESPONSE_CODE, responseCode);
-        propertyNames[attachments] = ATTACHMENTS;
-        keymap.put(ATTACHMENTS, attachments);
-        propertyNames[encoding] = ENCODING;
-        keymap.put(ENCODING, encoding);
-        propertyNames[httpContext] = AbstractHTTPDestination.HTTP_CONTEXT;
-        keymap.put(AbstractHTTPDestination.HTTP_CONTEXT, httpContext);
-        propertyNames[httpConfig] = AbstractHTTPDestination.HTTP_CONFIG;
-        keymap.put(AbstractHTTPDestination.HTTP_CONFIG, httpConfig);
-        propertyNames[httpContextMatchStrategy] = AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY;
-        keymap.put(AbstractHTTPDestination.HTTP_CONTEXT_MATCH_STRATEGY, httpContextMatchStrategy);
-        propertyNames[httpBasePath] = HTTP_BASE_PATH;
-        keymap.put(HTTP_BASE_PATH, httpBasePath);
-        propertyNames[asyncPostDispatch] = ASYNC_POST_RESPONSE_DISPATCH;
-        keymap.put(ASYNC_POST_RESPONSE_DISPATCH, asyncPostDispatch);
-        propertyNames[securityContext] = SECURITY_CONTEXT;
-        keymap.put(SECURITY_CONTEXT, securityContext);
-        propertyNames[authorizationPolicy] = AUTHORIZATION_POLICY;
-        keymap.put(AUTHORIZATION_POLICY, authorizationPolicy);
-        propertyNames[certConstraints] = CERT_CONSTRAINTS;
-        keymap.put(CERT_CONSTRAINTS, certConstraints);
-        propertyNames[serviceRedirection] = AbstractHTTPDestination.SERVICE_REDIRECTION;
-        keymap.put(AbstractHTTPDestination.SERVICE_REDIRECTION, serviceRedirection);
-        propertyNames[httpServletResponse] = HTTP_SERVLET_RESPONSE;
-        keymap.put(HTTP_SERVLET_RESPONSE, httpServletResponse);
-        propertyNames[resourceMethod] = RESOURCE_METHOD;
-        keymap.put(RESOURCE_METHOD, resourceMethod);
-        propertyNames[oneWayRequest] = ONE_WAY_REQUEST;
-        keymap.put(ONE_WAY_REQUEST, oneWayRequest);
-        propertyNames[asyncResponse] = ASYNC_RESPONSE;
-        keymap.put(ASYNC_RESPONSE, asyncResponse);
-        propertyNames[threadContextSwitched] = THREAD_CONTEXT_SWITCHED;
-        keymap.put(THREAD_CONTEXT_SWITCHED, threadContextSwitched);
-        propertyNames[cacheInputProperty] = OutgoingChainInterceptor.CACHE_INPUT_PROPERTY;
-        keymap.put(OutgoingChainInterceptor.CACHE_INPUT_PROPERTY, cacheInputProperty);
-        propertyNames[previousMessage] = PhaseInterceptorChain.PREVIOUS_MESSAGE;
-        keymap.put(PhaseInterceptorChain.PREVIOUS_MESSAGE, previousMessage);
-        propertyNames[responseHeadersCopied] = AbstractHTTPDestination.RESPONSE_HEADERS_COPIED;
-        keymap.put(AbstractHTTPDestination.RESPONSE_HEADERS_COPIED, responseHeadersCopied);
-        propertyNames[sseEventSink] = SSE_EVENT_SINK;
-        keymap.put(SSE_EVENT_SINK, sseEventSink);
-        propertyNames[requestorRole] = REQUESTOR_ROLE;
-        keymap.put(REQUESTOR_ROLE, requestorRole);
-        propertyNames[partialResponse] = PARTIAL_RESPONSE_MESSAGE;
-        keymap.put(PARTIAL_RESPONSE_MESSAGE, partialResponse);
-        propertyNames[emptyPartialResponse] = EMPTY_PARTIAL_RESPONSE_MESSAGE;
-        keymap.put(EMPTY_PARTIAL_RESPONSE_MESSAGE, emptyPartialResponse);
-        propertyNames[endpointAddress] = ENDPOINT_ADDRESS;
-        keymap.put(ENDPOINT_ADDRESS, endpointAddress);
-        propertyNames[inboundMessage] = INBOUND_MESSAGE;
-        keymap.put(INBOUND_MESSAGE, inboundMessage);
+        for (int i = 0; i < TOTAL; i++) {
+            keymap.put(propertyNames[i], i);
+        }
         KEYMAP = Collections.unmodifiableMap(keymap);
     }
     //Liberty code change end
@@ -398,17 +309,12 @@ public class MessageImpl extends StringMapImpl implements Message {
     @Override
     public Object getContextualProperty(String key) {
         //Liberty code change start
-        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
-        if (index != KEY_NOT_FOUND) {
-            Object value = propertyValues[index];
-            return value == NOT_FOUND ? null : value;
-        }
-        //Liberty code change end
-
         Object o = getOrDefault(key, NOT_FOUND);
         if (o != NOT_FOUND) {
             return o;
         }
+        //Liberty code change end
+
         return getFromExchange(key);
     }
 
@@ -544,17 +450,6 @@ public class MessageImpl extends StringMapImpl implements Message {
         return super.remove(key);
     }
     
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T get(Class<T> key) {
-        return (T) get(key.getName());
-    }
-
-    @Override
-    public <T> void put(Class<T> key, T value) {
-        put(key.getName(), value);
-    }
-
     @Override
     public Object get(Object key) {
         return get((String) key);
@@ -1087,7 +982,11 @@ public class MessageImpl extends StringMapImpl implements Message {
         }
         
         for (Object o : propertyValues) {
-            if (o.equals(value)) {
+            if (o == null) {
+                if (value == null) {
+                    return true;
+                }
+            } else if (o != NOT_FOUND && o.equals(value)) {
                 return true;
             }
         }
@@ -1101,20 +1000,12 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     
     public Object getOrDefault(String key, Object d) {
-        Object v = super.getOrDefault(key, NOT_FOUND);
-        if (v != NOT_FOUND) {
-            return v;
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            return propertyValues[index] == NOT_FOUND ? d : propertyValues[index];
         }
-        for (int i = 0; i < TOTAL; i++) {
-            if (propertyNames[i] == key) {
-                if (propertyValues[i] != NOT_FOUND) {
-                    return propertyValues[i];
-                } else {
-                    return d;
-                }
-            }
-        }
-        return d;
+
+        return super.getOrDefault(key, d);
     }
     
     @Override
@@ -1154,12 +1045,21 @@ public class MessageImpl extends StringMapImpl implements Message {
     public boolean replace(String key, Object oldValue, Object newValue) {
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
-            if (propertyValues[index] == oldValue) {
-                propertyValues[index] = newValue;
-                return true;
-            } else {
+            if (propertyValues[index] != NOT_FOUND) {
+                if (propertyValues[index] == null) {
+                    if (oldValue == null) {
+                        propertyValues[index] = newValue;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (propertyValues[index].equals(oldValue)){
+                    propertyValues[index] = newValue;
+                    return true;
+                }
                 return false;
             }
+            return false;
         }
         return super.replace(key, oldValue, newValue);
     }
@@ -1180,30 +1080,96 @@ public class MessageImpl extends StringMapImpl implements Message {
     public boolean remove(Object key, Object value) {
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
-            if (propertyValues[index] == value) {
-                propertyValues[index] = NOT_FOUND;
-                return true;
-            } else {
+            if (propertyValues[index] != NOT_FOUND) {
+                if (propertyValues[index] == null) {
+                    if (value == null) {
+                        propertyValues[index] = NOT_FOUND;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (propertyValues[index].equals(value)){
+                    propertyValues[index] = NOT_FOUND;
+                    return true;
+                }
                 return false;
             }
+            return false;
         }
         return super.remove(key, value);
     }
     @Override
     public Object compute(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
-        throw new UnsupportedOperationException();
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            Object newValue = remappingFunction.apply(key, propertyValues[index] == NOT_FOUND ? null : propertyValues[index]);
+            if (propertyValues[index] != NOT_FOUND) {
+                if (newValue != null) {
+                    propertyValues[index] = newValue;
+                } else {
+                    // should we set to null (since we allow null values) or NOT_FOUND (javadoc seems to suggest this)? 
+                    propertyValues[index] = NOT_FOUND;
+                }
+            } else {
+                if (newValue != null) {
+                    propertyValues[index] = newValue;
+                } else {
+                    return null;
+                }
+            }
+            return newValue;
+        }
+        return super.compute(key, remappingFunction);
     }
     @Override
     public Object computeIfAbsent(String key, Function<? super String, ? extends Object> mappingFunction) {
-        throw new UnsupportedOperationException();
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] == NOT_FOUND) {
+                Object newValue = mappingFunction.apply(key);
+                if (newValue != null) {
+                    // should we also add the newValue if null???
+                    propertyValues[index] = newValue;
+                }
+                return newValue;
+            }
+            return getFromPropertyArray(index);
+        }
+        return super.computeIfAbsent(key, mappingFunction);
     }
     @Override
     public Object computeIfPresent(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
-        throw new UnsupportedOperationException();
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] != NOT_FOUND) {
+                Object oldValue = propertyValues[index];
+                Object newValue = remappingFunction.apply(key, oldValue);
+                if (newValue != null) {
+                    // should we also add the newValue if null, or do the remove like javadoc suggests???
+                    propertyValues[index] = newValue;
+                }
+                return newValue;
+            }
+            return null;
+        }
+        return super.computeIfPresent(key, remappingFunction);
     }
     @Override
     public Object merge(String key, Object value, BiFunction<? super Object, ? super Object, ? extends Object> remappingFunction) {
-        throw new UnsupportedOperationException();
+        Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
+        if (index != KEY_NOT_FOUND) {
+            if (propertyValues[index] != NOT_FOUND) {
+                Object newValue = remappingFunction.apply(propertyValues[index], value);
+                if (newValue != null) {
+                    // should we also add the newValue if null, or do the remove like javadoc suggests???
+                    propertyValues[index] = newValue;
+                }
+            } else {
+                propertyValues[index] = value;
+            }
+            return propertyValues[index];
+        }
+        return super.merge(key, value, remappingFunction);
     }
     //Liberty code change end
 }

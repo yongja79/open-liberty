@@ -336,7 +336,9 @@ public abstract class AbstractHTTPDestination
                     //so they can be queried later for things like paths and schemes
                     //and such like that.
                     //Please note, exchange used to always get the "current" message
+                    //Liberty code change start
                     ((MessageImpl) exchange.getInMessage()).setHttpRequest(new HttpServletRequestSnapshot(req));
+                    //Liberty code change end
                 }
                 super.cacheInput();
             }
