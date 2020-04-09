@@ -19,16 +19,21 @@
 
 package org.apache.cxf.message;
 
+import java.util.AbstractCollection;
 import java.util.AbstractMap;
-import java.util.ArrayList;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.servlet.http.HttpServletResponse;
@@ -478,27 +483,232 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     @Override
     public Set<String> keySet() {
-        Set<String> myKeys = new HashSet<String>(super.keySet());
-        for (int i = 0; i < TOTAL; i++) {
-            if (propertyValues[i] != NOT_FOUND) {
-                myKeys.add(propertyNames[i]);
+        return new KeySet();
+    }
+    
+    Set<String> backedKeySet() {
+        return super.keySet();
+    }
+    
+    Set<Map.Entry<String, Object>> backedEntrySet() {
+        return super.entrySet();
+    }
+    
+    Collection<Object> backedValues() {
+        return super.values();
+    }
+    
+    abstract class MessageIterator<T> implements Iterator<T>{
+        Iterator<T> backedIterator;
+        int current = -1;
+        int next = -1;
+        boolean removeAllowed = false;
+        MessageIterator(Iterator<T> it) {
+            backedIterator = it;
+        }
+        @Override
+        public final boolean hasNext() {
+            if (backedIterator.hasNext()) {
+                return true;
             }
+            if (next == TOTAL) {
+                return false;
+            }
+
+            for (int i = current+1; i < TOTAL; i++) {
+                if (propertyValues[i] != NOT_FOUND) {
+                    next = i;
+                    return true;
+                }
+            }
+            next = TOTAL;
+            return false;
+        }
+        @Override
+        public final T next() {
+            if (hasNext()) {
+                if (next == -1) {
+                    removeAllowed = true;
+                    return backedIterator.next();
+                } else {
+                    current = next;
+                    removeAllowed = true;
+                    return getNextFromProperties(next);
+                }
+            }
+            removeAllowed = false;
+            throw new NoSuchElementException();
+        }
+        @Override
+        public final void remove() {
+            if (!removeAllowed) {
+                throw new IllegalStateException();
+            }
+            if (current == -1) {
+                backedIterator.remove();
+            } else {
+                propertyValues[current] = NOT_FOUND;
+            }
+            removeAllowed = false;
+        }
+        abstract T getNextFromProperties(int index);
+    }
+    
+    final class KeyIterator extends MessageIterator<String> {
+        KeyIterator() {
+            super(backedKeySet().iterator());
         }
 
-        return myKeys;
+        @Override
+        String getNextFromProperties(int index) {
+            return propertyNames[index];
+        }
+        
+    }
+
+    final class EntryIterator extends MessageIterator<Map.Entry<String, Object>> {
+        EntryIterator() {
+            super(backedEntrySet().iterator());
+        }
+
+        @Override
+        Map.Entry<String, Object> getNextFromProperties(int index) {
+            return new AbstractMap.SimpleEntry<String, Object>(propertyNames[index], propertyValues[index]);
+        }
+        
     }
     
-    @Override
-    public Set<Map.Entry<String,Object>> entrySet() {
-        HashSet<Map.Entry<String,Object>> myEntrySet = new HashSet<Map.Entry<String,Object>>(super.entrySet());
-        for (int i = 0; i < TOTAL; i++) {
-            if (propertyValues[i] != NOT_FOUND) {
-                myEntrySet.add(new AbstractMap.SimpleEntry<String,Object>(propertyNames[i], propertyValues[i]));
+    final class ValuesIterator extends MessageIterator<Object> {
+        ValuesIterator() {
+            super(backedValues().iterator());
+        }
+
+        @Override
+        Object getNextFromProperties(int index) {
+            return propertyValues[index];
+        }
+        
+    }
+    
+    final class KeySet extends AbstractSet<String> {
+        public final int size() {
+            return this.size();
+        }
+        public final void clear() {
+            this.clear();
+        }
+        public final Iterator<String> iterator() {
+            return new KeyIterator(); 
+        }
+        public final boolean contains(Object o) {
+            return containsKey(o);
+        }
+        public final boolean remove(Object key) {
+            if (containsKey(key)) {
+                this.remove(key);
+                return true;
+            }
+            return false;
+        }
+        public final Spliterator<String> spliterator() {
+           throw new UnsupportedOperationException();
+        }
+        public final void forEach(Consumer<? super String> action) {
+            if (action == null) {
+                throw new NullPointerException();
+            }
+            for (int i = 0; i < TOTAL; i++) {
+                if (propertyValues[i] != NOT_FOUND) {
+                    action.accept(propertyNames[i]);
+                }
+            }
+            for (String k : backedKeySet()) {
+                action.accept(k);
             }
         }
-        return myEntrySet;
     }
     
+    final class Values extends AbstractCollection<Object> {
+        public final int size() {
+            return this.size();
+        }
+        public final void clear() {
+            this.clear();
+        }
+        public final Iterator<Object> iterator() {
+            return new ValuesIterator(); 
+        }
+        public final boolean contains(Object o) {
+            return containsValue(o);
+        }
+        public final Spliterator<Object> spliterator() {
+           throw new UnsupportedOperationException();
+        }
+        public final void forEach(Consumer<? super Object> action) {
+            if (action == null) {
+                throw new NullPointerException();
+            }
+            for (int i = 0; i < TOTAL; i++) {
+                if (propertyValues[i] != NOT_FOUND) {
+                    action.accept(propertyValues[i]);
+                }
+            }
+            for (Object v : backedValues()) {
+                action.accept(v);
+            }
+        }
+    }
+    
+    final class EntrySet extends AbstractSet<Map.Entry<String, Object>> {
+        public final int size() {
+            return this.size();
+        }
+        public final void clear() {
+            this.clear();
+        }
+        public final Iterator<Map.Entry<String, Object>> iterator() {
+            return new EntryIterator(); 
+        }
+        public final boolean contains(Object o) {
+            if (!(o instanceof Map.Entry)) {
+                return false;
+            }
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+            String key = (String) e.getKey();
+            
+            if (containsKey(key)) {
+                AbstractMap.SimpleEntry<?,?> entry = new AbstractMap.SimpleEntry<>(key, get(key));
+                return entry.equals(e);
+            }
+            return false;
+        }
+        public final boolean remove(Object o) {
+            if (o instanceof Map.Entry) {
+                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Object key = e.getKey();
+                Object val = e.getValue();
+                return MessageImpl.this.remove(key, val);
+            }
+            return false;
+        }
+        public final Spliterator<Map.Entry<String, Object>> spliterator() {
+           throw new UnsupportedOperationException();
+        }
+        public final void forEach(Consumer<? super Map.Entry<String, Object>> action) {
+            if (action == null) {
+                throw new NullPointerException();
+            }
+            for (int i = 0; i < TOTAL; i++) {
+                if (propertyValues[i] != NOT_FOUND) {
+                    action.accept(new AbstractMap.SimpleEntry<>(propertyNames[i], propertyValues[i]));
+                }
+            }
+            for (Map.Entry<String, Object> e : backedEntrySet()) {
+                action.accept(e);
+            }
+        }
+    }
+
     @Override
     public boolean containsKey(Object key) {
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
@@ -515,13 +725,12 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Collection<Object> values() {
-        Collection<Object> myValues = new ArrayList<Object>(super.values());
-        for (Object o : propertyValues) {
-            if (o != NOT_FOUND) {
-                myValues.add(o);
-            }
-        }
-        return myValues;
+        return new Values();
+    }
+
+    @Override
+    public Set<Map.Entry<String,Object>> entrySet() {
+        return new EntrySet();
     }
 
     public Object getAuthorizationPolicy() {
@@ -980,17 +1189,19 @@ public class MessageImpl extends StringMapImpl implements Message {
         if (super.containsValue(value)) {
             return true;
         }
-        
-        for (Object o : propertyValues) {
-            if (o == null) {
-                if (value == null) {
+        if (value == null) {
+            for (Object o : propertyValues) {
+                if (o == null) {
                     return true;
                 }
-            } else if (o != NOT_FOUND && o.equals(value)) {
-                return true;
+            }
+        } else {
+            for (Object o : propertyValues) {
+                if (o != null && o != NOT_FOUND && value.equals(o)) {
+                    return true;
+                }
             }
         }
-        
         return false;
     }
     
@@ -1046,14 +1257,18 @@ public class MessageImpl extends StringMapImpl implements Message {
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
             if (propertyValues[index] != NOT_FOUND) {
-                if (propertyValues[index] == null) {
-                    if (oldValue == null) {
+                if (oldValue == null) {
+                    if (propertyValues[index] == null) {
                         propertyValues[index] = newValue;
                         return true;
                     } else {
                         return false;
                     }
-                } else if (propertyValues[index].equals(oldValue)){
+                }
+                if (propertyValues[index] == null) {
+                    return false;
+                }
+                if (oldValue.equals(propertyValues[index])){
                     propertyValues[index] = newValue;
                     return true;
                 }
@@ -1081,14 +1296,16 @@ public class MessageImpl extends StringMapImpl implements Message {
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
             if (propertyValues[index] != NOT_FOUND) {
-                if (propertyValues[index] == null) {
-                    if (value == null) {
+                if (value == null) {
+                    if (propertyValues[index] == null) {
                         propertyValues[index] = NOT_FOUND;
                         return true;
                     } else {
                         return false;
                     }
-                } else if (propertyValues[index].equals(value)){
+                } else if (propertyValues[index] == null) {
+                    return false;
+                } else if (value.equals(propertyValues[index])) {
                     propertyValues[index] = NOT_FOUND;
                     return true;
                 }
@@ -1100,35 +1317,27 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Object compute(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
+        if (remappingFunction == null) {
+            throw new NullPointerException();
+        }
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
             Object newValue = remappingFunction.apply(key, propertyValues[index] == NOT_FOUND ? null : propertyValues[index]);
-            if (propertyValues[index] != NOT_FOUND) {
-                if (newValue != null) {
-                    propertyValues[index] = newValue;
-                } else {
-                    // should we set to null (since we allow null values) or NOT_FOUND (javadoc seems to suggest this)? 
-                    propertyValues[index] = NOT_FOUND;
-                }
-            } else {
-                if (newValue != null) {
-                    propertyValues[index] = newValue;
-                } else {
-                    return null;
-                }
-            }
+            propertyValues[index] = newValue == null ? NOT_FOUND : newValue;
             return newValue;
         }
         return super.compute(key, remappingFunction);
     }
     @Override
     public Object computeIfAbsent(String key, Function<? super String, ? extends Object> mappingFunction) {
+        if (mappingFunction == null) {
+            throw new NullPointerException();
+        }
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
             if (propertyValues[index] == NOT_FOUND) {
                 Object newValue = mappingFunction.apply(key);
                 if (newValue != null) {
-                    // should we also add the newValue if null???
                     propertyValues[index] = newValue;
                 }
                 return newValue;
@@ -1139,15 +1348,14 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Object computeIfPresent(String key, BiFunction<? super String, ? super Object, ? extends Object> remappingFunction) {
+        if (remappingFunction == null) {
+            throw new NullPointerException();
+        }
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
             if (propertyValues[index] != NOT_FOUND) {
-                Object oldValue = propertyValues[index];
-                Object newValue = remappingFunction.apply(key, oldValue);
-                if (newValue != null) {
-                    // should we also add the newValue if null, or do the remove like javadoc suggests???
-                    propertyValues[index] = newValue;
-                }
+                Object newValue = remappingFunction.apply(key, propertyValues[index]);
+                propertyValues[index] = newValue == null ? NOT_FOUND : newValue;
                 return newValue;
             }
             return null;
@@ -1156,18 +1364,18 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Object merge(String key, Object value, BiFunction<? super Object, ? super Object, ? extends Object> remappingFunction) {
+        if (value == null || remappingFunction == null) {
+            throw new NullPointerException();
+        }
         Integer index = KEYMAP.getOrDefault(key, KEY_NOT_FOUND);
         if (index != KEY_NOT_FOUND) {
-            if (propertyValues[index] != NOT_FOUND) {
+            if (propertyValues[index] != NOT_FOUND && propertyValues[index] != null) {
                 Object newValue = remappingFunction.apply(propertyValues[index], value);
-                if (newValue != null) {
-                    // should we also add the newValue if null, or do the remove like javadoc suggests???
-                    propertyValues[index] = newValue;
-                }
+                propertyValues[index] = newValue == null ? NOT_FOUND : newValue;
             } else {
                 propertyValues[index] = value;
             }
-            return propertyValues[index];
+            return getFromPropertyArray(index);
         }
         return super.merge(key, value, remappingFunction);
     }
