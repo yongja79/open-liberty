@@ -146,6 +146,51 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     private static final Object NOT_FOUND = new Object();
     private static final Integer KEY_NOT_FOUND = Integer.valueOf(-1);
+
+    private static String[] getters = new String[] { "getContentType", "getProtocolHeaders", "getQueryString", "getHttpRequest", "getHttpResponse",
+                                              "getPathToMatchSlash", "getHttpRequestMethod", "getInterceptorProviders", "getTemplateParameters",
+                                              "getAccept", "getContinuationProvider", "getDestination", "getOperationResourceInfoStack", "getWsdlDescription", 
+                                              "getWsdlInterface", "getWsdlOperation", "getWsdlPort", "getWsdlService", "getRequestUrl", "getRequestUri", 
+                                              "getPathInfo", "getBasePath", "getFixedParamOrder", "getInInterceptors", "getOutInterceptors", "getResponseCode",
+                                              "getAttachments", "getEncoding", "getHttpContext", "getHttpConfig", "getHttpContextMatchStrategy", "getHttpBasePath",
+                                              "getAsyncPostDispatch", "getSecurityContext", "getAuthorizationPolicy", "getCertConstraints", 
+                                              "getServiceRedirection", "getHttpServletResponse", "getResourceMethod", "getOneWayRequest", "getAsyncResponse",
+                                              "getThreadContextSwitched", "getCacheInputProperty", "getPreviousMessage", "getResponseHeadersCopied", 
+                                              "getSseEventSink", "getRequestorRole", "getPartialResponse", "getEmptyPartialResponse", "getEndpointAddress", 
+                                              "getInboundMessage" };
+        
+    private static String[] setters = new String[] { "setContentType", "setProtocolHeaders", "setQueryString", "setHttpRequest", "setHttpResponse", "setPathToMatchSlash",
+                                             "setHttpRequestMethod", "setInterceptorProviders", "setTemplateParameters", "setAccept", "setContinuationProvider",
+                                             "setDestination", "setOperationResourceInfoStack", "setWsdlDescription", "setWsdlInterface", "setWsdlOperation",
+                                             "setWsdlPort", "setWsdlService", "setRequestUrl", "setRequestUri", "setPathInfo", "setBasePath", "setFixedParamOrder",
+                                             "setInInterceptors", "setOutInterceptors", "setResponseCode", "setAttachments", "setEncoding", "setHttpContext",
+                                             "setHttpConfig", "setHttpContextMatchStrategy", "setHttpBasePath", "setAsyncPostDispatch", "setSecurityContext",
+                                             "setAuthorizationPolicy", "setCertConstraints", "setServiceRedirection", "setHttpServletResponse", "setResourceMethod",
+                                             "setOneWayRequest", "setAsyncResponse", "setThreadContextSwitched", "setCacheInputProperty", "setPreviousMessage",
+                                             "setResponseHeadersCopied", "setSseEventSink", "setRequestorRole", "setPartialResponse", "setEmptyPartialResponse",
+                                             "setEndpointAddress", "setInboundMessage" };
+    
+    private static String[] removes = new String[] { "removeContentType", null, null, "removeHttpRequest", "removeHttpResponse", "removePathToMatchSlash", null, null, null, 
+                                             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                                             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                                             null, null };
+    
+    private static String[] contains = new String[] { "containsContentType", null, null, "containsHttpRequest", null, null, null, null, null, null, null, null, null, null,
+                                              null, null, null, null, null, null, null, "containsBasePath", null, null, null, null, null, null, null, null, null, 
+                                              null, null, null, null, null, null, null, null, null, null, null, null, "containsPreviousMessage", null, null, null, 
+                                              null, null, null, null };
+    
+    private static Class<?>[] types =  new Class[] { String.class, Map.class, String.class, Object.class, Object.class, String.class, String.class, Collection.class, 
+                                             Object.class, Object.class, Object.class, Destination.class, Object.class, Object.class, Object.class, Object.class, 
+                                             Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, 
+                                             Object.class, Object.class, Collection.class, Object.class, Object.class, Object.class, Object.class, Object.class, 
+                                             Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, Object.class, 
+                                             Object.class, Object.class, Object.class, Object.class, Object.class,  Object.class, Object.class, Object.class, 
+                                             Object.class, Object.class, Object.class };
+    
+    private Collection<Object> values = null;
+    private Set<String> keySet = null;
+    private Set<Map.Entry<String, Object>> entrySet = null;
     
     static {
         Map<String, Integer> keymap = new HashMap<String, Integer>(TOTAL);
@@ -425,9 +470,7 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
 
     void setContextualProperty(String key, Object v) {
-        if (!containsKey(key)) {
-            put(key, v);
-        }
+        putIfAbsent(key, v);
     }
     
     @SuppressWarnings("rawtypes")
@@ -483,19 +526,7 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     @Override
     public Set<String> keySet() {
-        return new KeySet();
-    }
-    
-    Set<String> backedKeySet() {
-        return super.keySet();
-    }
-    
-    Set<Map.Entry<String, Object>> backedEntrySet() {
-        return super.entrySet();
-    }
-    
-    Collection<Object> backedValues() {
-        return super.values();
+        return keySet != null ? keySet : (keySet = new KeySet());
     }
     
     abstract class MessageIterator<T> implements Iterator<T>{
@@ -515,13 +546,11 @@ public class MessageImpl extends StringMapImpl implements Message {
                 return false;
             }
 
-            for (int i = current+1; i < TOTAL; i++) {
-                if (propertyValues[i] != NOT_FOUND) {
-                    next = i;
+            for (next = current+1; next < TOTAL; next++) {
+                if (propertyValues[next] != NOT_FOUND) {
                     return true;
                 }
             }
-            next = TOTAL;
             return false;
         }
         @Override
@@ -556,7 +585,7 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     final class KeyIterator extends MessageIterator<String> {
         KeyIterator() {
-            super(backedKeySet().iterator());
+            super(MessageImpl.super.keySet().iterator());
         }
 
         @Override
@@ -568,7 +597,7 @@ public class MessageImpl extends StringMapImpl implements Message {
 
     final class EntryIterator extends MessageIterator<Map.Entry<String, Object>> {
         EntryIterator() {
-            super(backedEntrySet().iterator());
+            super(MessageImpl.super.entrySet().iterator());
         }
 
         @Override
@@ -580,7 +609,7 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     final class ValuesIterator extends MessageIterator<Object> {
         ValuesIterator() {
-            super(backedValues().iterator());
+            super(MessageImpl.super.values().iterator());
         }
 
         @Override
@@ -592,10 +621,10 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     final class KeySet extends AbstractSet<String> {
         public final int size() {
-            return this.size();
+            return MessageImpl.this.size();
         }
         public final void clear() {
-            this.clear();
+            MessageImpl.this.clear();
         }
         public final Iterator<String> iterator() {
             return new KeyIterator(); 
@@ -605,7 +634,7 @@ public class MessageImpl extends StringMapImpl implements Message {
         }
         public final boolean remove(Object key) {
             if (containsKey(key)) {
-                this.remove(key);
+                MessageImpl.this.remove(key);
                 return true;
             }
             return false;
@@ -622,7 +651,7 @@ public class MessageImpl extends StringMapImpl implements Message {
                     action.accept(propertyNames[i]);
                 }
             }
-            for (String k : backedKeySet()) {
+            for (String k : MessageImpl.super.keySet()) {
                 action.accept(k);
             }
         }
@@ -630,10 +659,10 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     final class Values extends AbstractCollection<Object> {
         public final int size() {
-            return this.size();
+            return MessageImpl.this.size();
         }
         public final void clear() {
-            this.clear();
+            MessageImpl.this.clear();
         }
         public final Iterator<Object> iterator() {
             return new ValuesIterator(); 
@@ -653,7 +682,7 @@ public class MessageImpl extends StringMapImpl implements Message {
                     action.accept(propertyValues[i]);
                 }
             }
-            for (Object v : backedValues()) {
+            for (Object v : MessageImpl.super.values()) {
                 action.accept(v);
             }
         }
@@ -661,10 +690,10 @@ public class MessageImpl extends StringMapImpl implements Message {
     
     final class EntrySet extends AbstractSet<Map.Entry<String, Object>> {
         public final int size() {
-            return this.size();
+            return MessageImpl.this.size();
         }
         public final void clear() {
-            this.clear();
+            MessageImpl.this.clear();
         }
         public final Iterator<Map.Entry<String, Object>> iterator() {
             return new EntryIterator(); 
@@ -676,8 +705,9 @@ public class MessageImpl extends StringMapImpl implements Message {
             Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             String key = (String) e.getKey();
             
-            if (containsKey(key)) {
-                AbstractMap.SimpleEntry<?,?> entry = new AbstractMap.SimpleEntry<>(key, get(key));
+            Object val = getOrDefault(key, NOT_FOUND);
+            if (val != NOT_FOUND) {
+                AbstractMap.SimpleEntry<?,?> entry = new AbstractMap.SimpleEntry<>(key, val);
                 return entry.equals(e);
             }
             return false;
@@ -703,7 +733,7 @@ public class MessageImpl extends StringMapImpl implements Message {
                     action.accept(new AbstractMap.SimpleEntry<>(propertyNames[i], propertyValues[i]));
                 }
             }
-            for (Map.Entry<String, Object> e : backedEntrySet()) {
+            for (Map.Entry<String, Object> e : MessageImpl.super.entrySet()) {
                 action.accept(e);
             }
         }
@@ -725,12 +755,12 @@ public class MessageImpl extends StringMapImpl implements Message {
     }
     @Override
     public Collection<Object> values() {
-        return new Values();
+        return values != null ? values : (values = new Values());
     }
 
     @Override
     public Set<Map.Entry<String,Object>> entrySet() {
-        return new EntrySet();
+        return entrySet != null ? entrySet : (entrySet = new EntrySet());
     }
 
     public Object getAuthorizationPolicy() {
@@ -1378,6 +1408,27 @@ public class MessageImpl extends StringMapImpl implements Message {
             return getFromPropertyArray(index);
         }
         return super.merge(key, value, remappingFunction);
+    }
+    public String[] getPropertyNames() {
+        return propertyNames;
+    }
+    public Object[] getPropertyValues() {
+        return propertyValues;
+    }
+    public String[] getGetters() {
+        return getters;
+    }
+    public String[] getSetters() {
+        return setters;
+    }
+    public String[] getRemoves() {
+        return removes;
+    }
+    public String[] getContains() {
+        return contains;
+    }
+    public Class<?>[] getTypes() {
+        return types;
     }
     //Liberty code change end
 }
