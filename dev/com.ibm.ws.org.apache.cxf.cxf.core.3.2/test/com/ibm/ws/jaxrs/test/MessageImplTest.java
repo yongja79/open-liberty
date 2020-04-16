@@ -472,7 +472,7 @@ public class MessageImplTest {
             ((MyDestination) value).setString(v);
         } else if (type == Collection.class) {
             value = new HashSet<String>();
-            ((HashSet<String>) value).add(v);//a
+            ((HashSet<String>) value).add(v);
         }
         return value;
     }
