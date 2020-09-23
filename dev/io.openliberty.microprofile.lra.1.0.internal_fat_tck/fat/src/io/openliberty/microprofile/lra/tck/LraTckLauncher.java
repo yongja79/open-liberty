@@ -109,7 +109,7 @@ public class LraTckLauncher {
         Map<String, String> additionalProps = new HashMap<>();
         additionalProps.put("lra.tck.base.url", protocol + "://" + host + ":" + port);
         additionalProps.put("lra.tck.timeout.factor", "100");
-        additionalProps.put("lraTestsToRun", "**/*ContextTest*.java");
+        additionalProps.put("lraTestsToRun", "**/*TckTest*.java");
 
         MvnUtils.runTCKMvnCmd(server, "io.openliberty.microprofile.lra.1.0.internal_fat_tck", this.getClass() + ":launchLRATCK", additionalProps);
 

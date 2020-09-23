@@ -104,7 +104,7 @@
 			<artifactId>lra-test-narayana</artifactId>
 			<version>5.10.5.Final</version>
 			<scope>system</scope>
-			<systemPath>${project.basedir}/../../../publish/tckRunner/tck/src/lib/narayana_bean.jar</systemPath>
+			<systemPath>${project.basedir}/../../../publish/tckRunner/tck/src/lib/lra-test-arquillian-extension-5.10.6.Final.jar</systemPath>
 		</dependency>
 	</dependencies>
 
