@@ -18,7 +18,8 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.arquillian.test.spi.TestClass;
 
 import org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService;
-import io.openliberty.microprofile.lra.test.LRARecoveryServiceImpl;
+import io.narayana.lra.arquillian.spi.NarayanaLRARecovery;
+import io.narayana.lra.arquillian.NarayanaLRABaseUrlProvider;
 
 /**
  * Adds the LRARecoveryServiceImpl to all arquillian archives and exposes it
@@ -30,11 +31,11 @@ public class LRATckArchiveProcessor implements ApplicationArchiveProcessor {
     @Override
     public void process(Archive<?> applicationArchive, TestClass testClass) {
         if (applicationArchive instanceof WebArchive) {
-            ((WebArchive) applicationArchive).addClass(LRARecoveryServiceImpl.class)
-            .addAsServiceProviderAndClasses(LRARecoveryService.class, LRARecoveryServiceImpl.class);
+            ((WebArchive) applicationArchive).addClass(NarayanaLRARecovery.class)
+                    .addAsServiceProviderAndClasses(org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService.class, NarayanaLRARecovery.class);
         } else if (applicationArchive instanceof JavaArchive) {
-            ((JavaArchive) applicationArchive).addClass(LRARecoveryServiceImpl.class)
-            .addAsServiceProviderAndClasses(LRARecoveryService.class, LRARecoveryServiceImpl.class);
+            ((JavaArchive) applicationArchive).addClass(NarayanaLRARecovery.class)
+                    .addAsServiceProviderAndClasses(org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService.class, NarayanaLRARecovery.class);
         }
         
     }

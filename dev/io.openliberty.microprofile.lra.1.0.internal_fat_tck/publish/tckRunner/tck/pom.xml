@@ -99,6 +99,13 @@
 			<version>1.0.6</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>lra-test-jy</groupId>
+			<artifactId>lra-test-narayana</artifactId>
+			<version>5.10.5.Final</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/../../../publish/tckRunner/tck/src/lib/lra-test-arquillian-extension-5.10.6.Final.jar</systemPath>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -144,6 +151,7 @@
 						<tck_server>${tck_server}</tck_server>
 						<tck_port>${tck_port}</tck_port>
 						<lra.tck.base.url>http://localhost:${tck_port}</lra.tck.base.url>
+						<lra.tck.timeout.factor>1.5</lra.tck.timeout.factor>
 					</systemPropertyVariables>
 					<dependenciesToScan>
 						<dependency>org.eclipse.microprofile.lra:microprofile-lra-tck</dependency>
