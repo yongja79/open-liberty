@@ -15,11 +15,14 @@ import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArch
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.arquillian.test.spi.TestClass;
 
 import org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService;
 import io.narayana.lra.arquillian.spi.NarayanaLRARecovery;
 import io.narayana.lra.arquillian.NarayanaLRABaseUrlProvider;
+import io.narayana.lra.arquillian.spi.LRAAnnotationAdjuster;
+import io.narayana.lra.arquillian.spi.LRAAnnotationAdjuster$LRAWrapped;
 
 /**
  * Adds the LRARecoveryServiceImpl to all arquillian archives and exposes it
@@ -30,8 +33,12 @@ public class LRATckArchiveProcessor implements ApplicationArchiveProcessor {
     
     @Override
     public void process(Archive<?> applicationArchive, TestClass testClass) {
+
         if (applicationArchive instanceof WebArchive) {
-            ((WebArchive) applicationArchive).addClass(NarayanaLRARecovery.class)
+            ((WebArchive) applicationArchive).addPackage(NarayanaLRARecovery.class.getPackage())
+                    .addClass(LRAAnnotationAdjuster.class)
+                    .addClass(LRAAnnotationAdjuster$LRAWrapped.class)
+                    .addPackage("org.jboss.logging")
                     .addAsServiceProviderAndClasses(org.eclipse.microprofile.lra.tck.service.spi.LRARecoveryService.class, NarayanaLRARecovery.class);
         } else if (applicationArchive instanceof JavaArchive) {
             ((JavaArchive) applicationArchive).addClass(NarayanaLRARecovery.class)
